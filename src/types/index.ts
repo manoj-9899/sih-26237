@@ -1,0 +1,155 @@
+/**
+ * Core type definitions for Post-Quantum Cryptographic Attribution
+ * and Immutable Decryption Provenance System.
+ */
+
+export interface EncryptedKeystoreEnvelope {
+  saltHex: string;
+  ivHex: string;
+  encryptedKemSecretBase64: string;
+  encryptedDsaSecretBase64: string;
+  kdf: 'PBKDF2-SHA256-100K';
+  cipher: 'AES-256-GCM';
+}
+
+export interface RecipientKeyMetadata {
+  kemAlgorithm: 'ML-KEM-768';
+  kemPublicKeyHex: string;
+  kemSecretKeyHex?: string; // Volatile unlocked state
+  dsaAlgorithm: 'ML-DSA-65';
+  dsaPublicKeyHex: string;
+  dsaSecretKeyHex?: string; // Volatile unlocked state
+  encryptedKeystore?: EncryptedKeystoreEnvelope; // Encrypted at rest
+  keyFingerprint: string;
+  registeredAt: number;
+}
+
+export interface Recipient {
+  id: string;
+  name: string;
+  role: string;
+  organization: string;
+  clearanceLevel: 'TOP SECRET // SCI' | 'SECRET' | 'CONFIDENTIAL' | 'RESTRICTED';
+  avatarInitials: string;
+  isUnlocked?: boolean;
+  keys: RecipientKeyMetadata;
+}
+
+export interface RecipientEnvelope {
+  recipientId: string;
+  recipientName: string;
+  kemCiphertextBase64: string;
+  wrappedCekBase64: string;
+  kemAlgorithm: 'ML-KEM-768';
+}
+
+export interface EncryptedPackage {
+  packageId: string;
+  documentId: string;
+  documentTitle: string;
+  classification: string;
+  version: number;
+  originalDocumentHashSha256: string;
+  ciphertextBase64: string;
+  ivHex: string;
+  tagHex: string;
+  envelopes: RecipientEnvelope[];
+  senderId: string;
+  senderName: string;
+  createdAt: number;
+}
+
+export interface DecryptionEventPayload {
+  eventId: string;
+  documentId: string;
+  documentTitle: string;
+  documentHashSha256: string;
+  packageHashSha256: string;
+  recipientId: string;
+  recipientName: string;
+  recipientPubkeyFingerprint: string;
+  sessionId: string;
+  watermarkId: string;
+  watermarkCommitment: string;
+  timestampEpochMs: number;
+  clientMetadata: {
+    terminalId: string;
+    runtimeSecurity: string;
+  };
+}
+
+export interface DecryptionEvent extends DecryptionEventPayload {
+  signatureAlgorithm: 'ML-DSA-65';
+  recipientSignatureBase64: string;
+  blockHeight?: number;
+  txHash?: string;
+  status: 'MEMPOOL' | 'COMMITTED';
+}
+
+export interface WatermarkPayload {
+  syncHeader: number; // 0xA55A
+  sessionId: string;
+  watermarkId: string;
+  recipientId: string;
+  recipientFingerprint: string;
+  timestamp: number;
+  eccChecksum: number;
+}
+
+export interface ValidatorNode {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  status: 'ONLINE' | 'VALIDATING' | 'SYNCED';
+  blocksValidated: number;
+  publicVerificationKeyHex: string;
+}
+
+export interface LedgerBlock {
+  height: number;
+  timestamp: number;
+  previousHash: string;
+  blockHash: string;
+  merkleRoot: string;
+  transactions: DecryptionEvent[];
+  validatorSignatures: Array<{
+    validatorId: string;
+    validatorName: string;
+    signatureHex: string;
+  }>;
+  stateRoot: string;
+}
+
+export interface ForensicAttributionReport {
+  reportId: string;
+  analyzedAt: number;
+  watermarkExtracted: boolean;
+  watermarkPayload?: WatermarkPayload;
+  matchedEvent?: DecryptionEvent;
+  matchedBlock?: LedgerBlock;
+  merkleProofValid: boolean;
+  pqcSignatureValid: boolean;
+  ledgerIntegrityValid: boolean;
+  attributedRecipient?: Recipient;
+  attributionVerdict: 'CONFIRMED_LEAK_SOURCE' | 'TAMPERED_WATERMARK' | 'UNREGISTERED_EVENT' | 'FAILED_EXTRACTION';
+  confidenceScore: number; // 0 to 100
+  evidenceChain: Array<{
+    step: string;
+    description: string;
+    status: 'VERIFIED' | 'WARNING' | 'FAILED';
+    technicalDetail: string;
+  }>;
+}
+
+export interface ClassifiedDocument {
+  id: string;
+  title: string;
+  classification: 'TOP SECRET // SCI' | 'SECRET' | 'CONFIDENTIAL';
+  caveats: string;
+  originatingOffice: string;
+  summary: string;
+  rawText: string;
+  visualPages: string[]; // SVGs / Canvas Data URLs
+  createdAt: number;
+}

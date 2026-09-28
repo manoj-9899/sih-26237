@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Base Surfaces (Obsidian/Graphite Spectrum - Zero blue tint) */
+    --surface-root: #0a0b0d;
+    --surface-primary: #12141a;
+    --surface-elevated: #181b22;
+    --surface-recessed: #0d0e12;
+
+    /* Structural Architectural Borders */
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-medium: rgba(255, 255, 255, 0.12);
+    --border-prominent: rgba(255, 255, 255, 0.20);
+
+    /* Single Primary Operational Accent (Tactical Steel Phosphor / Muted Platinum Sage) */
+    --accent-op: #38bdf8;
+    --accent-op-hover: #0284c7;
+    --accent-op-subtle: rgba(56, 189, 248, 0.08);
+    --accent-op-border: rgba(56, 189, 248, 0.25);
+
+    /* Single Clinical Diagnostic / Breach Channel */
+    --breach-crimson: #dc2626;
+    --breach-crimson-subtle: rgba(220, 38, 38, 0.09);
+    --breach-crimson-border: rgba(220, 38, 38, 0.35);
+
+    /* Steganographic Inspection Channel (Muted Ochre) */
+    --inspection-ochre: #d97706;
+    --inspection-ochre-subtle: rgba(217, 119, 6, 0.10);
+    --inspection-ochre-border: rgba(217, 119, 6, 0.30);
+
+    /* Archival Monospace Data Ink */
+    --ink-archival: #c5cbd3;
+    --ink-muted: #79828d;
+    --ink-faint: #484f58;
+  }
+
+  body {
+    background-color: var(--surface-root);
+    color: #e6edf3;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Scrollbar for Recessed Data Terminal */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0e12;
+}
+::-webkit-scrollbar-thumb {
+  background: #24292f;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #323842;
+}

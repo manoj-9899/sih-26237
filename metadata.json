@@ -1,0 +1,6 @@
+{
+  "name": "Cryptographic Attribution & Immutable Decryption Provenance",
+  "description": "Air-gapped multi-recipient document distribution system featuring post-quantum key encapsulation and signatures (ML-KEM & ML-DSA), dynamic invisible forensic watermarking at decryption time, and immutable decentralized ledger provenance for definitive leak attribution.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
