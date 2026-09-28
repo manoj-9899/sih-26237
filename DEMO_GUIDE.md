@@ -57,19 +57,31 @@ Before clicking any buttons, here is a quick overview of the key technologies us
 
 ## 2. Starting the Application
 
-### Prerequisites
-Make sure Node.js (version 18+ or 20+) is installed.
+### GitHub Repository
+Project source code: **[https://github.com/manoj-9899/sih-26237](https://github.com/manoj-9899/sih-26237)**
 
-### Terminal Commands
-1. Navigate to the project root directory:
+### Prerequisites
+Make sure Node.js (version 18+ or 20+) and Git are installed on your computer.
+
+### Step-by-Step Terminal Commands
+1. Clone the repository and navigate into the project directory:
    ```bash
-   cd /path/to/project
+   git clone https://github.com/manoj-9899/sih-26237.git
+   cd sih-26237
    ```
-2. Start the development server:
+2. Install the project dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy the sample environment file (no external API keys or cloud accounts needed):
+   ```bash
+   cp .env.example .env
+   ```
+4. Start the local development server:
    ```bash
    npm run dev
    ```
-3. Open your browser and go to:
+5. Open your browser and go to:
    ```text
    http://localhost:3000
    ```

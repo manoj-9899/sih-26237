@@ -1,5 +1,6 @@
 # SIH26237: Post-Quantum Document Enclave & Forensic Attribution System
 
+> **Repository:** [https://github.com/manoj-9899/sih-26237](https://github.com/manoj-9899/sih-26237)  
 > **One-Line Description:** A quantum-safe, multi-recipient document distribution workstation that embeds invisible forensic watermarks at decryption time and anchors non-repudiable post-quantum provenance signatures into an offline immutable distributed ledger.  
 > **SIH Problem Statement ID:** SIH26237  
 > **Project Status:** Complete Functional Prototype / Browser-Based Air-Gapped Cryptographic Enclave  
@@ -91,8 +92,8 @@ Make sure you have Node.js and Git installed on your computer:
 ### Step 2: Clone the Repository
 Open your terminal (Command Prompt, PowerShell, or macOS/Linux Terminal) and run:
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/manoj-9899/sih-26237.git
+cd sih-26237
 ```
 
 ### Step 3: Install Dependencies
@@ -101,24 +102,24 @@ Install the required packages using npm:
 npm install
 ```
 
-### Step 4: Configure Environment Variables
-Copy the sample environment file (no external API keys or secrets are required for local operation):
+### Step 4: Configure Environment Variables (Optional)
+Copy the sample environment configuration file (no external API keys or cloud accounts are needed for local operation):
 ```bash
 cp .env.example .env
 ```
 
-### Step 5: Start the Development Server
-Start the local Vite development server:
+### Step 5: Start the Local Development Server
+Start the local development server:
 ```bash
 npm run dev
 ```
 
 ### Step 6: Open the Application
-Look at your terminal output. Open your browser and navigate to:
+Open your web browser and navigate to:
 ```text
 http://localhost:3000
 ```
-You will see the dark-themed institutional workstation interface.
+You will immediately see the Post-Quantum Cryptographic Provenance Workstation interface.
 
 ---
 
