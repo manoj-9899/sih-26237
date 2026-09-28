@@ -16,11 +16,15 @@ import {
   SAMPLE_DOCUMENTS,
   initializeRecipientsAndLedger,
 } from './data/sampleData';
-import { Recipient, EncryptedPackage, ClassifiedDocument } from './types';
+import { Recipient, EncryptedPackage, ClassifiedDocument, UiMode } from './types';
 import { airGappedLedger } from './ledger/dlt';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('walkthrough');
+  const [uiMode, setUiMode] = useState<UiMode>(() => {
+    const saved = localStorage.getItem('sih26237_ui_mode');
+    return saved === 'guided' ? 'guided' : 'workstation';
+  });
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [documents, setDocuments] = useState<ClassifiedDocument[]>(SAMPLE_DOCUMENTS);
   const [activePackage, setActivePackage] = useState<EncryptedPackage | null>(null);
@@ -28,6 +32,11 @@ export default function App() {
   const [leakedMeta, setLeakedMeta] = useState<{ title: string; recipientName: string } | null>(null);
   const [blocksCount, setBlocksCount] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const handleToggleUiMode = (mode: UiMode) => {
+    setUiMode(mode);
+    localStorage.setItem('sih26237_ui_mode', mode);
+  };
 
   const handleAddDocument = (newDoc: ClassifiedDocument) => {
     setDocuments((prev) => [newDoc, ...prev]);
@@ -82,6 +91,8 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         blocksCount={blocksCount}
+        uiMode={uiMode}
+        onToggleUiMode={handleToggleUiMode}
       />
 
       {/* Main Tab Viewport */}
@@ -91,6 +102,7 @@ export default function App() {
             documents={documents}
             recipients={recipients}
             onFinishDemo={() => setActiveTab('sender')}
+            uiMode={uiMode}
           />
         )}
 
@@ -104,6 +116,7 @@ export default function App() {
             }}
             onNavigateToRecipient={() => setActiveTab('recipient')}
             onAddDocument={handleAddDocument}
+            uiMode={uiMode}
           />
         )}
 
@@ -117,6 +130,7 @@ export default function App() {
             onSimulateLeak={handleSimulateLeak}
             onNavigateToForensics={() => setActiveTab('forensics')}
             onNavigateToLedger={() => setActiveTab('ledger')}
+            uiMode={uiMode}
           />
         )}
 
@@ -125,16 +139,17 @@ export default function App() {
             initialLeakedText={leakedText}
             leakedMetadata={leakedMeta}
             onNavigateToLedger={() => setActiveTab('ledger')}
+            uiMode={uiMode}
           />
         )}
 
         {activeTab === 'ledger' && (
-          <DltExplorer onRefreshNeeded={refreshBlocksCount} />
+          <DltExplorer onRefreshNeeded={refreshBlocksCount} uiMode={uiMode} />
         )}
 
-        {activeTab === 'pqc' && <PqcRegistry recipients={recipients} />}
+        {activeTab === 'pqc' && <PqcRegistry recipients={recipients} uiMode={uiMode} />}
 
-        {activeTab === 'security' && <SecurityTestHarness recipients={recipients} />}
+        {activeTab === 'security' && <SecurityTestHarness recipients={recipients} uiMode={uiMode} />}
       </main>
 
       {/* Tactical Console Footer */}

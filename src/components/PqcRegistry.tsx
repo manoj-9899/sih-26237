@@ -12,8 +12,9 @@ import {
   Fingerprint,
   Radio,
 } from 'lucide-react';
-import { Recipient } from '../types';
+import { Recipient, UiMode } from '../types';
 import { generateRecipientPqcKeys, bytesToHex } from '../crypto/pqc';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -24,9 +25,10 @@ import {
 
 interface PqcRegistryProps {
   recipients: Recipient[];
+  uiMode?: UiMode;
 }
 
-export const PqcRegistry: React.FC<PqcRegistryProps> = ({ recipients }) => {
+export const PqcRegistry: React.FC<PqcRegistryProps> = ({ recipients, uiMode = 'workstation' }) => {
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>(recipients[0]?.id || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedKeyResult, setGeneratedKeyResult] = useState<{
@@ -67,38 +69,47 @@ export const PqcRegistry: React.FC<PqcRegistryProps> = ({ recipients }) => {
 
   return (
     <div className="space-y-5">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="5"
+          title="Post-Quantum Cryptographic Identity Directory & Live Key Synthesizer"
+          summary="NIST finalized post-quantum standards in August 2024 to withstand quantum attacks. This directory holds registered ML-KEM-768 (FIPS 203) keys for confidential envelope wrapping and ML-DSA-65 (FIPS 204) keys for non-repudiable digital signatures."
+          recommendedAction="Click on an enrolled personnel profile on the left to inspect their public keys, or click 'Synthesize Live PQC Keypair' to generate an authentic lattice keypair in WebAssembly memory."
+          whatToObserve="Notice that public keys are larger than legacy RSA (1,184 bytes for ML-KEM and 1,952 bytes for ML-DSA) and mathematically resist quantum factorization."
+          actionButtonLabel="Synthesize Keypair"
+          onActionClick={handleGenerateLivePqcKeys}
+        />
+      )}
+
       {/* 1. OPERATIONAL CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="nominal" icon={<KeyRound className="w-3 h-3 text-[#adbac7]" />}>
-                PQC IDENTITY REGISTRY &bull; FIPS 203 / 204
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                LATTICE CRYPTOGRAPHY ENGINE
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                RSA / ECC STRICTLY EXCLUDED
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Cryptographic Identity Registry &amp; Hardware Keystore Directory
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Maintains all verified post-quantum public keys enrolled across defense personnel. Employs NIST FIPS 203
-              (ML-KEM-768) for key decapsulation and NIST FIPS 204 (ML-DSA-65) for non-repudiable digital signatures.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="nominal" icon={<KeyRound className="w-3 h-3 text-[#adbac7]" />}>
+              PQC REGISTRY
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-KEM-768 (FIPS 203)
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-DSA-65 (FIPS 204)
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              {recipients.length} KEYSTORES
+            </span>
           </div>
 
-          {/* Quick Enrolled Personnel Metric */}
-          <div className="shrink-0 self-start lg:self-center font-mono text-xs">
-            <div className="p-2.5 rounded-md bg-[#0d0e12] border border-white/[0.06] space-y-0.5">
-              <span className="text-[10px] text-[#768390] uppercase block">ENROLLED RECIPIENTS</span>
-              <span className="text-base font-bold text-[#e6edf3]">{recipients.length} Hardware Keystores</span>
-            </div>
+          <div className="shrink-0 flex items-center gap-2">
+            <OperationalButton
+              variant="operational"
+              size="sm"
+              onClick={handleGenerateLivePqcKeys}
+              disabled={isGenerating}
+              icon={<Cpu className="w-3 h-3" />}
+            >
+              {isGenerating ? 'SYNTHESIZING...' : 'SYNTHESIZE LIVE PQC KEYPAIR'}
+            </OperationalButton>
           </div>
         </div>
       </WorkstationSurface>

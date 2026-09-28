@@ -1,84 +1,97 @@
-# Beginner-Friendly Verification Plan: How to Test the Project
+# Dual-Mode Workstation Implementation Plan: Guided Mode vs. Workstation Mode
 
-**Goal:** Verify that every part of the post-quantum encrypted document distribution, invisible watermarking, immutable blockchain, and leak attribution system is working as intended.
-
----
-
-### Step 1: Automated Guided Tour ("Mission Demo")
-- **Where:** Click **"Mission Demo"** in the top navigation bar.
-- **Action:** Click the green **"Run Full Lifecycle Simulation"** button.
-- **What to look for:**
-  - Watch the 5-step progress bar animate through:
-    1. *Package Creation* (encrypting for Alice & Bob)
-    2. *Recipient Decryption* (Bob unlocks his copy)
-    3. *Dynamic Watermark Injection* (invisible fingerprint added)
-    4. *Blockchain Consensus* (3/3 validator nodes agree)
-    5. *Forensic Extraction* (detecting Bob as the leaker)
-  - You will see confetti and a green verification badge confirm the complete lifecycle in under 5 seconds.
+## Overview
+We will implement a global dual-mode interface switch that empowers both first-time evaluators/beginners and experienced security operators:
+1. **Workstation Mode (Clean / Pro):** An ultra-clean, high-density, professional defense terminal with low text density, status-first hierarchy, progressive disclosure for technical details, and zero educational clutter.
+2. **Guided Mode (Beginner / Evaluator):** Inline collapsible guidance panels, interactive step-by-step hints, plain-English explanations of *why* things work, and visual highlights pointing to the next recommended action.
 
 ---
 
-### Step 2: Test Encrypting a Secret Document ("Sender Studio")
-- **Where:** Click **"Sender Studio"** in the top navigation bar.
-- **Action:**
-  1. Select a classified document from the list (e.g., *Operation Aegis*).
-  2. In Step 2, check the boxes for **Dr. Alice Vance** and **Col. Bob Martinez** (leave Cmdr. Charlie Chen unchecked).
-  3. Click **"Generate Encrypted Distribution Package"**.
-- **What to look for:**
-  - A green badge saying **"Package Ready"**.
-  - Review the recipient envelopes: you will see individual ML-KEM-768 lockboxes created specifically for Alice and Bob.
-  - Click **"Download Package (.sihpkg)"** to see that the app can export a real standalone file for offline transfer.
+## 1. Global Mode State & Navigation Architecture
+- **Location:** Integrated directly in `src/components/Navbar.tsx` alongside current system metrics.
+- **Control:** A sleek, tactical toggle switch:
+  - `[WORKSTATION]` (Clean, data-dense, minimal copy, high scanability)
+  - `[GUIDED MODE]` (Interactive assistant, inline collapsible panels, contextual hints, step guidance)
+- **Persistence:** Saved in `localStorage` (`sih26237_ui_mode`) so user preferences are preserved across tab reloads.
 
 ---
 
-### Step 3: Test Decryption & Invisible Watermarking ("Recipient Portal")
-- **Where:** Click **"Recipient Portal"** in the top navigation bar.
-- **Action 1 (Authorized Recipient):**
-  1. Select **Col. Bob Martinez**. Notice the green badge says *"Envelope Found"*.
-  2. Click **"Decrypt & Bind Provenance Event"**.
-  3. Watch the 5-step decryption pipeline execute: KEM key recovery -> AES decryption -> invisible watermark embedding -> Bob's digital signature -> Blockchain commit.
-  4. Once decrypted, click **"Inspect Stego Channel"** above the document text.
-- **What to look for:**
-  - A yellow box will appear showing the secret session ID and watermark ID hidden inside the text.
-- **Action 2 (Unauthorized Recipient):**
-  1. Switch the persona to **Amb. Diana Ross** (who was never added to the package).
-  2. Notice the button is disabled and displays a red warning: *"No Key Envelope"*. This proves that unauthorized people cannot decrypt the file.
+## 2. Reusable Guidance Primitive (`src/components/ui/GuidancePanel.tsx`)
+Create a dedicated, high-quality component:
+- **Collapsed/Expanded state:** Easily toggled with a single click.
+- **Visual Styling:** Clean, military/tactical theme border with soft cyan/amber accents.
+- **Contents:**
+  - *What is happening on this screen?* (Plain-English summary)
+  - *Recommended next step* (e.g., "Select Dr. Alice Vance and click Decrypt")
+  - *What to observe* (e.g., "Notice the ML-DSA-65 signature generated on the fly")
+  - *Quick Dismiss / Hide button*
 
 ---
 
-### Step 4: Catch the Leaker ("Forensic Studio")
-- **Where:** Click **"Recipient Portal"**, and on Bob's decrypted document, click the red button: **"Simulate Leak of Bob's Copy"**.
-- **Action:** The app automatically takes you to the **"Forensic Studio"** with Bob's leaked text pre-filled. Click **"Execute Blind Forensic Attribution"**.
-- **What to look for:**
-  - The system scans the text, pulls out the hidden watermark, and queries the blockchain.
-  - A red **"CRIMINAL LEAK ATTRIBUTED WITH INDISPUTABLE PROOF"** alert appears.
-  - It correctly names **Col. Bob Martinez** as the source with **99.9% confidence**.
-  - All 4 verification steps (Watermark Header, Ledger Audit, Merkle Tree Proof, and Post-Quantum Signature) show green checkmarks.
-  - Click **"Download Certificate (.json)"** to verify that a legal evidence file can be saved.
+## 3. Screen-by-Screen Dual-Mode Experience
+
+### A. Sender Studio (`SenderStudio.tsx`)
+* **Workstation Mode:**
+  - Compact 36px operational status bar (`MODULE: SENDER` • `CIPHER: AES-256-GCM` • `KEM: FIPS 203`).
+  - No introductory paragraphs.
+  - High-density recipient matrix with clearance tags.
+  - Encrypted package summary with one-click JSON inspect drawer.
+* **Guided Mode:**
+  - Prominent collapsible guide card at top: *"Step 1: How multi-recipient broadcast encryption works."*
+  - Interactive hint pills next to recipient checkboxes: *"Select Alice and Bob, but leave Charlie unchecked to test unauthorized rejection later."*
+  - Animated pulse on the primary "Generate Package" button when ready.
+
+### B. Recipient Portal (`RecipientPortal.tsx`)
+* **Workstation Mode:**
+  - Ultra-clean operator selection rail.
+  - Compact 6-stage telemetry progress bar ($< 35\text{px}$).
+  - Document viewport with clean action buttons (`Inspect Stego`, `Download`, `Simulate Leak`).
+* **Guided Mode:**
+  - Collapsible guidance card: *"Step 2: Decrypting and binding the invisible forensic watermark."*
+  - Step-by-step indicator explaining the 6 pipeline stages in simple terms.
+  - Explanatory callout for the **"Inspect Forensic Channel"** feature and what the watermark represents.
+  - Guided highlight for the **"Simulate Leak"** button to lead into the forensic investigation.
+
+### C. Forensic Studio (`ForensicStudio.tsx`)
+* **Workstation Mode:**
+  - Lean ingestion console without redundant tutorial copy.
+  - High-density attribution verdict banner (`PERPETRATOR: DR. ALICE VANCE` • `CONFIDENCE: 100%`).
+  - Compact cryptographic checklist (`[✓] 0xA55A SYNC` • `[✓] CRC-16` • `[✓] ML-DSA-65 VERIFIED`).
+  - Detailed raw proof (Merkle branch, Base64 signature) tucked inside a collapsible inspector drawer.
+* **Guided Mode:**
+  - Top guidance panel: *"Step 3: How blind forensic extraction catches the leaker."*
+  - Explains how zero-width characters are recovered from the text and matched with the blockchain.
+  - Step-by-step breakdown of how the certificate proves non-repudiation in legal proceedings.
+
+### D. DLT Explorer (`DltExplorer.tsx`)
+* **Workstation Mode:**
+  - Sleek 3/3 validator node telemetry dots (`ALPHA: OK`, `BRAVO: OK`, `GAMMA: OK`).
+  - Compact block list with block height, Merkle root hash, and transaction badges.
+  - Clean one-click buttons for *"Audit Chain"* and *"Simulate Tamper"*.
+* **Guided Mode:**
+  - Inline guidance panel: *"What is an Air-Gapped DLT and why can't administrators erase logs?"*
+  - Explanatory walkthrough of the tamper attack: *"Click Simulate Tamper to see how cryptographic Merkle roots catch rogue database edits."*
+
+### E. PQC Registry (`PqcRegistry.tsx`)
+* **Workstation Mode:**
+  - High-density table of enrolled defense personnel.
+  - Truncated key fingerprints with 1-click copy buttons instead of full raw hex screens.
+  - Clean slide-over key inspection modal.
+* **Guided Mode:**
+  - Guidance panel: *"What are NIST FIPS 203 (ML-KEM) and FIPS 204 (ML-DSA)?"*
+  - Explains why legacy RSA and ECC are excluded to protect against quantum computers.
+
+### F. Attack Lab (`SecurityTestHarness.tsx`)
+* **Workstation Mode:**
+  - High-density security test matrix with execution metrics ($ms$), pass/fail indicators, and one-click run.
+  - Diagnostic logs collapsed into an on-demand drawer.
+* **Guided Mode:**
+  - Guidance panel: *"Adversarial Testing Bench: Testing negative security guarantees."*
+  - Plain-English threat descriptions for each of the 7 security vectors.
 
 ---
 
-### Step 5: Verify the Blockchain & Audit History ("DLT Explorer")
-- **Where:** Click **"DLT Explorer"** in the top navigation bar.
-- **Action:**
-  1. Look at the chain of blocks (Block #0 Genesis, Block #1, Block #2, etc.).
-  2. Click on the latest block to expand it: see the exact Decryption Event transaction, timestamp, and Merkle root.
-  3. Click the green **"Audit Entire Ledger Chain"** button at the top right.
-- **What to look for:**
-  - The system recalculates every single cryptographic hash from block 0 to the top and confirms: *"All blocks cryptographically intact. 0 administrative tampering detected."*
-  - *(Optional Test)* Click **"Simulate Admin Tamper Attack"** on Block #1. The chain will immediately turn RED and flag an alarm, proving that even a system administrator cannot silently alter records! Click *"Revert Tamper Attack"* to restore it.
-
----
-
-### Step 6: Test Real Attacks in the Cyber Lab ("Attack Lab")
-- **Where:** Click **"Attack Lab"** in the top navigation bar.
-- **Action:** Click the red **"Run All Security Tests"** button.
-- **What to look for:**
-  - Watch 7 real-world cyber attacks get executed and defeated in real time:
-    1. *Unauthorized Recipient Decryption Defense* -> **PASSED**
-    2. *Cross-Recipient Key Mismatch* -> **PASSED**
-    3. *Ciphertext Bit-Flip Tamper Resistance* -> **PASSED**
-    4. *Post-Quantum Signature Forgery Defense* -> **PASSED**
-    5. *Historical Ledger Block Rewriting Detection* -> **PASSED**
-    6. *Unwatermarked Document Clean Rejection* -> **PASSED**
-    7. *Steganographic Bit-Tampering Detection* -> **PASSED**
+## 4. Verification and Testing
+- Run `npm run lint` (`tsc --noEmit`) to verify zero TypeScript errors.
+- Run `npm run build` to ensure the production bundle builds cleanly.
+- Verify toggle responsiveness: switching modes smoothly toggles guidance without losing active document, package, or decryption state.

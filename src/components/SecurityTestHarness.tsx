@@ -18,7 +18,7 @@ import {
 import { DistributionService } from '../services/distributionService';
 import { airGappedLedger } from '../ledger/dlt';
 import { SAMPLE_DOCUMENTS } from '../data/sampleData';
-import { Recipient } from '../types';
+import { Recipient, UiMode } from '../types';
 import {
   hexToBytes,
   base64ToBytes,
@@ -28,6 +28,7 @@ import {
   sha256Hex,
   decryptDocumentContent,
 } from '../crypto/pqc';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -38,6 +39,7 @@ import {
 
 interface SecurityTestHarnessProps {
   recipients: Recipient[];
+  uiMode?: UiMode;
 }
 
 interface TestCase {
@@ -49,7 +51,10 @@ interface TestCase {
   runTest: () => Promise<{ passed: boolean; details: string; rawLogs: string[] }>;
 }
 
-export const SecurityTestHarness: React.FC<SecurityTestHarnessProps> = ({ recipients }) => {
+export const SecurityTestHarness: React.FC<SecurityTestHarnessProps> = ({
+  recipients,
+  uiMode = 'workstation',
+}) => {
   const [testResults, setTestResults] = useState<
     Record<
       string,
@@ -360,40 +365,44 @@ export const SecurityTestHarness: React.FC<SecurityTestHarnessProps> = ({ recipi
 
   return (
     <div className="space-y-5">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="6"
+          title="Adversarial Attack Lab: Empirical Negative Security Test Bench"
+          summary="In mission-critical defense systems, verifying negative security guarantees (what the system prevents) is as vital as positive functionality. This automated test bench executes 7 real cryptographic attacks against running browser enclave memory."
+          recommendedAction="Click 'RUN ALL 7 SECURITY TESTS' to watch all attack vectors get intercepted and neutralized in real time."
+          whatToObserve="Observe all 7 tests pass with 0 false positives, confirming resistance against bit-flips, unauthorized decryptions, signature forgeries, and retroactive block rewrites."
+          actionButtonLabel="Run All Security Tests"
+          onActionClick={handleRunAll}
+        />
+      )}
+
       {/* 1. OPERATIONAL CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="neutral" icon={<ShieldAlert className="w-3 h-3 text-[#adbac7]" />}>
-                ADVERSARIAL ATTACK LAB &bull; NEGATIVE SECURITY TEST BENCH
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                TEST SUITE: 7 ADVERSARIAL VECTORS
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                EVALUATION: AUTOMATED MATHEMATICAL ASSURANCE
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Cryptographic Threat Model &amp; Negative Attack Test Bench
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Empirically verifies all seven negative threat models required for defense non-repudiation: unauthorized key recovery,
-              cross-envelope mismatch, ciphertext bit-flips, forged ML-DSA signatures, historical ledger rewrites, false positive
-              watermark rejections, and carrier corruption.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="neutral" icon={<ShieldAlert className="w-3 h-3 text-[#adbac7]" />}>
+              ATTACK LAB
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              7 ADVERSARIAL VECTORS
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              NEGATIVE SECURITY BENCH
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              REAL-TIME MEMORY EXECUTION
+            </span>
           </div>
 
-          <div className="shrink-0 self-start lg:self-center">
+          <div className="shrink-0 flex items-center gap-2">
             <OperationalButton
               variant="operational"
-              size="md"
+              size="sm"
               onClick={handleRunAll}
               disabled={isRunningAll}
-              icon={<Play className="w-3.5 h-3.5 text-[#adbac7]" />}
+              icon={<Play className="w-3 h-3" />}
             >
               {isRunningAll ? 'EXECUTING ADVERSARIAL SUITE...' : 'RUN ALL 7 SECURITY TESTS'}
             </OperationalButton>

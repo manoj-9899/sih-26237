@@ -17,8 +17,9 @@ import {
   Cpu,
   Fingerprint,
 } from 'lucide-react';
-import { LedgerBlock, ValidatorNode } from '../types';
+import { LedgerBlock, ValidatorNode, UiMode } from '../types';
 import { airGappedLedger } from '../ledger/dlt';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -29,9 +30,13 @@ import {
 
 interface DltExplorerProps {
   onRefreshNeeded: () => void;
+  uiMode?: UiMode;
 }
 
-export const DltExplorer: React.FC<DltExplorerProps> = ({ onRefreshNeeded }) => {
+export const DltExplorer: React.FC<DltExplorerProps> = ({
+  onRefreshNeeded,
+  uiMode = 'workstation',
+}) => {
   const [chain, setChain] = useState<LedgerBlock[]>([]);
   const [validators, setValidators] = useState<ValidatorNode[]>([]);
   const [selectedBlockHeight, setSelectedBlockHeight] = useState<number>(0);
@@ -99,43 +104,67 @@ export const DltExplorer: React.FC<DltExplorerProps> = ({ onRefreshNeeded }) => 
 
   return (
     <div className="space-y-5">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="4"
+          title="Air-Gapped Immutable DLT & Cryptographic Anti-Tamper Auditor"
+          summary="Traditional databases can be silently altered by rogue system administrators to erase access logs. This system anchors every Decryption Event into a distributed ledger protected by SHA-256 block hash chaining, Merkle roots, and a 3/3 validator quorum."
+          recommendedAction="Click 'AUDIT ENTIRE CHAIN' to verify cryptographic integrity. Then click 'Simulate Tamper' to watch the audit engine catch unauthorized edits."
+          whatToObserve="When tampering occurs, the hash chain breaks and the auditor flags the exact block height (#1) and field mismatch."
+          actionButtonLabel="Audit Entire Chain"
+          onActionClick={handleRunAudit}
+        />
+      )}
+
       {/* 1. OPERATIONAL CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="nominal" icon={<Database className="w-3 h-3 text-[#adbac7]" />}>
-                IMMUTABLE DLT WORKSTATION &bull; AIR-GAPPED CONSENSUS
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                CONSENSUS: 3/3 BFT RATIFIED
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                HASH LINKING: SHA-256 + BINARY MERKLE TREES
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Distributed Ledger Explorer &amp; Cryptographic Tamper Auditor
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Inspects immutable decryption provenance events anchored across an air-gapped permissioned blockchain.
-              Each block guarantees multi-validator signature consensus, preventing unilateral database rewrites or historical
-              tampering by rogue administrators.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="nominal" icon={<Database className="w-3 h-3 text-[#adbac7]" />}>
+              IMMUTABLE DLT CONSOLE
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              3/3 BFT QUORUM
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              MERKLE + SHA-256
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              HEIGHT: #{chain.length}
+            </span>
           </div>
 
-          {/* Ledger Telemetry Summary */}
-          <div className="shrink-0 flex items-center gap-3 font-mono text-xs">
-            <div className="p-2.5 rounded-md bg-[#0d0e12] border border-white/[0.06] space-y-0.5">
-              <span className="text-[10px] text-[#768390] uppercase block">CHAIN HEIGHT</span>
-              <span className="text-base font-bold text-[#e6edf3]">{chain.length} Blocks</span>
-            </div>
-            <div className="p-2.5 rounded-md bg-[#0d0e12] border border-white/[0.06] space-y-0.5">
-              <span className="text-[10px] text-[#768390] uppercase block">VALIDATORS</span>
-              <span className="text-base font-bold text-[#7ee787]">{validators.length}/3 Online</span>
-            </div>
+          <div className="shrink-0 flex items-center gap-2">
+            <OperationalButton
+              variant={isTampered ? 'danger' : 'operational'}
+              size="sm"
+              onClick={handleRunAudit}
+              disabled={isAuditing}
+              icon={<ShieldCheck className="w-3 h-3" />}
+            >
+              {isAuditing ? 'AUDITING...' : 'AUDIT ENTIRE CHAIN'}
+            </OperationalButton>
+
+            {!isTampered ? (
+              <OperationalButton
+                variant="danger"
+                size="sm"
+                onClick={handleSimulateTamper}
+                icon={<AlertTriangle className="w-3 h-3" />}
+              >
+                Simulate Tamper
+              </OperationalButton>
+            ) : (
+              <OperationalButton
+                variant="operational"
+                size="sm"
+                onClick={handleRestoreLedger}
+                icon={<RotateCcw className="w-3 h-3" />}
+              >
+                Restore Quorum
+              </OperationalButton>
+            )}
           </div>
         </div>
       </WorkstationSurface>

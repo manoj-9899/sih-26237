@@ -54,9 +54,22 @@ Ledger Record Match & Signature Audit
 Indisputable Attribution Result (Perpetrator Identified)
 ```
 
+```
+
 ---
 
-## 3. Quick Start / Beginner Walkthrough
+## 3. Dual Operational Modes (Workstation Mode vs. Guided Mode)
+
+The interface includes a top navigation toggle switch tailored for both defense operators and first-time evaluators:
+
+* **`[WORKSTATION]` (Clean / Professional):**
+  A high-density, status-first security terminal. Strips away educational text and paragraphs, prioritizing quick scanning, operational badges, concise telemetry bars, and one-click actions. Advanced cryptographic proofs (Merkle branches, raw hex keys, and base64 signatures) are accessed cleanly via on-demand drawers.
+* **`[GUIDED MODE]` (Beginner / Evaluator):**
+  Provides inline, collapsible guidance panels on every screen. Clearly explains *what is happening*, *the recommended next action*, and *what cryptographic proofs to observe*. It features quick-action buttons to guide you seamlessly through the entire demonstration without reading the source code.
+
+---
+
+## 4. Quick Start / Beginner Walkthrough
 
 You can set up, run, and demonstrate this entire application on your computer in less than 5 minutes.
 

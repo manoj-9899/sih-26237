@@ -25,8 +25,10 @@ import {
   EncryptedPackage,
   DecryptionEvent,
   ForensicAttributionReport,
+  UiMode,
 } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -39,12 +41,14 @@ interface WalkthroughTabProps {
   documents: ClassifiedDocument[];
   recipients: Recipient[];
   onFinishDemo: () => void;
+  uiMode?: UiMode;
 }
 
 export const WalkthroughTab: React.FC<WalkthroughTabProps> = ({
   documents,
   recipients,
   onFinishDemo,
+  uiMode = 'workstation',
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -201,42 +205,46 @@ export const WalkthroughTab: React.FC<WalkthroughTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="★"
+          title="Mission Demonstration & Guided Cryptographic Lifecycle"
+          summary="This automated walkthrough runs through the full lifecycle: 1. Encrypt once for multiple recipients (ML-KEM-768), 2. Alice decapsulates and receives a watermarked copy, 3. Bob decapsulates and receives his own distinct watermark, 4. Compare documents (100% visually identical), 5. Bob leaks his copy, and 6. The forensic studio proves Bob is the leaker."
+          recommendedAction="Click 'AUTO-RUN MISSION WALKTHROUGH' to watch the entire process execute automatically with zero manual setup, or step through manually below."
+          whatToObserve="Notice how Bob's leak is indisputably identified even though Alice and Bob saw the exact same visual document text."
+          actionButtonLabel="Run Mission Walkthrough"
+          onActionClick={handleRunFullPipeline}
+        />
+      )}
+
       {/* 1. MISSION HEADER & OPERATIONAL CONTEXT */}
-      <WorkstationSurface variant="primary" className="p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="active" icon={<Radio className="w-3 h-3 text-[#7ee787]" />}>
-                MISSION DEMONSTRATION &bull; RUNTIME ENCLAVE
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                SUITE: NIST FIPS 203 (ML-KEM) &amp; FIPS 204 (ML-DSA)
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                CONSENSUS: 3/3 AIR-GAPPED DLT
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Cryptographic Attribution &amp; Immutable Decryption Provenance
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Demonstrates the end-to-end mission lifecycle: sealing a classified payload once for multiple defense
-              recipients, enforcing dynamic steganographic binding and hardware-backed signature at individual decapsulation,
-              and achieving mathematical non-repudiation when a copy is leaked.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="active" icon={<Radio className="w-3 h-3 text-[#7ee787]" />}>
+              MISSION CONSOLE
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-KEM-768
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-DSA-65
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              AIR-GAPPED 3/3 DLT
+            </span>
           </div>
 
           {/* Operational Playback Trigger */}
-          <div className="shrink-0 flex items-center gap-2 self-start lg:self-center">
+          <div className="shrink-0 flex items-center gap-2">
             {currentStep > 1 && (
               <OperationalButton
                 variant="secondary"
-                size="md"
+                size="sm"
                 onClick={handleResetDemo}
                 disabled={isRunning}
-                icon={<RotateCcw className="w-3.5 h-3.5" />}
+                icon={<RotateCcw className="w-3 h-3" />}
               >
                 Reset
               </OperationalButton>
@@ -244,12 +252,12 @@ export const WalkthroughTab: React.FC<WalkthroughTabProps> = ({
 
             <OperationalButton
               variant="operational"
-              size="md"
+              size="sm"
               onClick={handleRunFullPipeline}
               disabled={isRunning}
-              icon={<PlayCircle className="w-4 h-4 text-[#adbac7]" />}
+              icon={<PlayCircle className="w-3.5 h-3.5" />}
             >
-              {isRunning ? 'EXECUTING PIPELINE...' : 'RUN FULL LIFECYCLE SIMULATION'}
+              {isRunning ? 'EXECUTING PIPELINE...' : 'AUTO-RUN MISSION WALKTHROUGH'}
             </OperationalButton>
           </div>
         </div>

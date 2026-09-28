@@ -21,8 +21,9 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { ForensicAttributionReport } from '../types';
+import { ForensicAttributionReport, UiMode } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -35,12 +36,14 @@ interface ForensicStudioProps {
   initialLeakedText?: string;
   leakedMetadata?: { title: string; recipientName: string } | null;
   onNavigateToLedger: () => void;
+  uiMode?: UiMode;
 }
 
 export const ForensicStudio: React.FC<ForensicStudioProps> = ({
   initialLeakedText,
   leakedMetadata,
   onNavigateToLedger,
+  uiMode = 'workstation',
 }) => {
   const [leakedContent, setLeakedContent] = useState<string>(initialLeakedText || '');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -79,41 +82,47 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="3"
+          title="Blind Forensic Steganography Extraction & Ledger Attribution"
+          summary="An investigator pastes or uploads an unattributed leaked document. The forensic engine blindly scans zero-width character sequences, recovers the hidden 32-byte session payload, matches it against the immutable DLT, and verifies the recipient's ML-DSA-65 digital signature."
+          recommendedAction="Ensure the leaked document text is in the box below and click 'EXECUTE BLIND FORENSIC ATTRIBUTION'."
+          whatToObserve="Observe the 100% confidence verdict and download the court-ready Forensic Certificate (.json) linking the leak directly to the perpetrator."
+          actionButtonLabel="Execute Attribution"
+          onActionClick={handleRunInvestigation}
+        />
+      )}
+
       {/* 1. OPERATIONAL CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="inspection" icon={<Fingerprint className="w-3 h-3 text-[#f0883e]" />}>
-                FORENSIC LAB &bull; LEAK RECOVERY CONSOLE
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                RECOVERY: BLIND STEGANOGRAPHY EXTRACTION
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                VERIFICATION: NIST FIPS 204 (ML-DSA-65)
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Forensic Investigation Studio &amp; Cryptographic Leak Attribution
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Extracts the opaque session steganographic watermark from an unattributed plaintext document, matches the
-              watermark commitment against the air-gapped immutable ledger, and cryptographically verifies the recipient&apos;s
-              ML-DSA-65 signature to establish non-repudiable source attribution.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="inspection" icon={<Fingerprint className="w-3 h-3 text-[#f0883e]" />}>
+              FORENSIC LAB
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              BLIND STEGANOGRAPHY
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-DSA-65 (FIPS 204)
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              LEDGER VERIFIED
+            </span>
           </div>
 
-          <div className="shrink-0 self-start lg:self-center font-mono text-xs">
-            <div className="p-2.5 rounded-md bg-[#0d0e12] border border-white/[0.06] space-y-1">
-              <div className="text-[10px] text-[#768390] uppercase font-bold">ATTRIBUTION PIPELINE</div>
-              <div className="text-[#adbac7] font-semibold flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#7ee787]" />
-                <span>AIR-GAPPED CONSENSUS AUDIT</span>
-              </div>
-            </div>
+          <div className="shrink-0 flex items-center gap-2">
+            <OperationalButton
+              variant="operational"
+              size="sm"
+              onClick={handleRunInvestigation}
+              disabled={isAnalyzing || !leakedContent.trim()}
+              icon={<Search className="w-3 h-3" />}
+            >
+              {isAnalyzing ? 'EXTRACTING...' : 'EXECUTE BLIND ATTRIBUTION'}
+            </OperationalButton>
           </div>
         </div>
       </WorkstationSurface>

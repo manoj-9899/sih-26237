@@ -3,6 +3,8 @@
  * and Immutable Decryption Provenance System.
  */
 
+export type UiMode = 'workstation' | 'guided';
+
 export interface EncryptedKeystoreEnvelope {
   saltHex: string;
   ivHex: string;

@@ -14,6 +14,8 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 
+import { UiMode } from '../types';
+
 export type ActiveTab =
   | 'walkthrough'
   | 'sender'
@@ -27,12 +29,16 @@ interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   blocksCount: number;
+  uiMode: UiMode;
+  onToggleUiMode: (mode: UiMode) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   blocksCount,
+  uiMode,
+  onToggleUiMode,
 }) => {
   return (
     <header className="border-b border-white/[0.08] bg-[#0d0f14]/95 backdrop-blur-md sticky top-0 z-50">
@@ -94,7 +100,39 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* 3. Operational Tab Navigation System */}
+        {/* Global UI Mode Switcher */}
+        <div className="flex items-center gap-2 self-start md:self-center">
+          <div className="flex items-center p-0.5 rounded-lg bg-[#07080a] border border-white/[0.12] text-xs font-mono select-none">
+            <button
+              onClick={() => onToggleUiMode('workstation')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
+                uiMode === 'workstation'
+                  ? 'bg-[#1f242d] text-[#e6edf3] font-semibold shadow-sm border border-white/[0.14]'
+                  : 'text-[#768390] hover:text-[#adbac7]'
+              }`}
+              title="Workstation Mode: Clean, data-dense interface with zero educational clutter"
+            >
+              <Cpu className="w-3 h-3 text-[#7ee787]" />
+              <span>WORKSTATION</span>
+            </button>
+            <button
+              onClick={() => onToggleUiMode('guided')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
+                uiMode === 'guided'
+                  ? 'bg-cyan-950/80 text-cyan-300 font-semibold shadow-sm border border-cyan-500/40'
+                  : 'text-[#768390] hover:text-cyan-400'
+              }`}
+              title="Guided Mode: Step-by-step guidance panels, hints, and plain-English workflow explanations"
+            >
+              <Layers className="w-3 h-3 text-cyan-400" />
+              <span>GUIDED MODE</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Operational Tab Navigation System */}
+      <div className="max-w-7xl mx-auto px-4 pb-2.5">
         <nav className="flex items-center gap-1 p-1 rounded-lg bg-[#0a0b0d] border border-white/[0.08] overflow-x-auto">
           <button
             onClick={() => setActiveTab('walkthrough')}

@@ -21,8 +21,9 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { ClassifiedDocument, Recipient, EncryptedPackage } from '../types';
+import { ClassifiedDocument, Recipient, EncryptedPackage, UiMode } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -38,6 +39,7 @@ interface SenderStudioProps {
   activePackage: EncryptedPackage | null;
   onNavigateToRecipient: () => void;
   onAddDocument?: (doc: ClassifiedDocument) => void;
+  uiMode?: UiMode;
 }
 
 export const SenderStudio: React.FC<SenderStudioProps> = ({
@@ -47,6 +49,7 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
   activePackage,
   onNavigateToRecipient,
   onAddDocument,
+  uiMode = 'workstation',
 }) => {
   const [selectedDocId, setSelectedDocId] = useState<string>(documents[0]?.id || '');
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
@@ -167,54 +170,55 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Guided Mode Instruction Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="1"
+          title="Broadcast Encryption & Multi-Recipient Key Packaging"
+          summary="In standard systems, sending to multiple recipients creates identical files that cannot be attributed if leaked. Here, the document is encrypted once with a fast 256-bit symmetric key (AES-256-GCM), and that key is wrapped independently for each selected recipient using quantum-safe ML-KEM-768."
+          recommendedAction="Keep Dr. Alice Vance and Col. Bob Martinez selected, but leave Charlie Chen UNCHECKED. Then click 'GENERATE ENCRYPTED PACKAGE'."
+          whatToObserve="Notice that a separate post-quantum key envelope is created for Alice and Bob, sealing them into one tamper-proof container."
+          actionButtonLabel="Generate Encrypted Package"
+          onActionClick={handleCreatePackage}
+        />
+      )}
+
       {/* 1. SENDER OPERATIONS CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="neutral" icon={<Lock className="w-3 h-3 text-[#adbac7]" />}>
-                SENDER OPERATIONS &bull; DISPATCH CONSOLE
-              </StatusBadge>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                CIPHER: AES-256-GCM
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                KEM: NIST FIPS 203 (ML-KEM-768)
-              </span>
-              <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
-                AIR-GAPPED STORAGE
-              </span>
-            </div>
-
-            <h2 className="text-xl font-bold text-[#e6edf3] tracking-tight">
-              Classified Document Ingestion &amp; Broadcast Packaging
-            </h2>
-
-            <p className="text-xs text-[#768390] leading-relaxed max-w-3xl">
-              Encrypts the document body once using a high-throughput 256-bit symmetric Content Encryption Key (CEK).
-              The CEK is independently encapsulated for each authorized recipient using lattice-based ML-KEM-768 public keys,
-              sealing all authorized parties into a single non-tamperable distribution container.
-            </p>
+      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status="neutral" icon={<Lock className="w-3 h-3 text-[#adbac7]" />}>
+              SENDER CONSOLE
+            </StatusBadge>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              AES-256-GCM
+            </span>
+            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+              ML-KEM-768
+            </span>
+            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+              AIR-GAPPED
+            </span>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2 self-start lg:self-center">
+          <div className="shrink-0 flex items-center gap-2">
             <OperationalButton
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => setShowAddModal(true)}
-              icon={<Upload className="w-3.5 h-3.5" />}
+              icon={<Upload className="w-3 h-3" />}
             >
               Ingest Document
             </OperationalButton>
 
             <OperationalButton
               variant="operational"
-              size="md"
+              size="sm"
               onClick={handleCreatePackage}
               disabled={isPackaging || selectedRecipientIds.length === 0}
-              icon={<Lock className="w-3.5 h-3.5" />}
+              icon={<Lock className="w-3 h-3" />}
             >
-              {isPackaging ? 'COMPUTING KEM ENVELOPES...' : 'GENERATE ENCRYPTED PACKAGE'}
+              {isPackaging ? 'PACKAGING...' : 'GENERATE ENCRYPTED PACKAGE'}
             </OperationalButton>
           </div>
         </div>

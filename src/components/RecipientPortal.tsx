@@ -25,8 +25,9 @@ import {
   Database,
   Search,
 } from 'lucide-react';
-import { Recipient, EncryptedPackage, DecryptionEvent, WatermarkPayload } from '../types';
+import { Recipient, EncryptedPackage, DecryptionEvent, WatermarkPayload, UiMode } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { GuidancePanel } from './ui/GuidancePanel';
 import {
   WorkstationSurface,
   OperationalButton,
@@ -48,6 +49,7 @@ interface RecipientPortalProps {
   onSimulateLeak: (leakedText: string, metadata: { title: string; recipientName: string }) => void;
   onNavigateToForensics: () => void;
   onNavigateToLedger: () => void;
+  uiMode?: UiMode;
 }
 
 export const RecipientPortal: React.FC<RecipientPortalProps> = ({
@@ -57,6 +59,7 @@ export const RecipientPortal: React.FC<RecipientPortalProps> = ({
   onSimulateLeak,
   onNavigateToForensics,
   onNavigateToLedger,
+  uiMode = 'workstation',
 }) => {
   const [selectedRecipientId, setSelectedRecipientId] = useState<string>(recipients[0]?.id || '');
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
@@ -159,6 +162,17 @@ export const RecipientPortal: React.FC<RecipientPortalProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Guided Mode Guidance Panel */}
+      {uiMode === 'guided' && (
+        <GuidancePanel
+          stepNumber="2"
+          title="Recipient Verification, Decapsulation & Forensic Binding"
+          summary="When an authorized recipient decrypts the document, the enclave unpacks the symmetric key via ML-KEM-768, injects a personalized zero-width watermark into the text, cryptographically signs the event with ML-DSA-65, and commits it into the air-gapped ledger."
+          recommendedAction="Select 'Dr. Alice Vance' (Envelope Cleared) and click 'DECRYPT & BIND PROVENANCE EVENT'. Then try selecting 'Charlie Chen' to see unauthorized access rejection."
+          whatToObserve="Observe the 6-stage operational pipeline execute in real-time, followed by the option to inspect the forensic stego channel or simulate a leak."
+        />
+      )}
+
       {/* ========================================================= */}
       {/* 1. COMPACT RECIPIENT OPERATIONS CONTEXT HEADER           */}
       {/* ========================================================= */}
