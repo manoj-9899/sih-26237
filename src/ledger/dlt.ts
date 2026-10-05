@@ -18,30 +18,39 @@ import { airGappedStorage } from '../storage/airGappedStorage';
 export const INITIAL_VALIDATORS: ValidatorNode[] = [
   {
     id: 'val-alpha-01',
-    name: 'Alpha-Validator',
-    role: 'Primary Air-Gapped Enclave Node',
-    location: 'Vault-1 / SCIF Alpha',
+    name: 'Validator Alpha',
+    role: 'Primary Consensus Node',
+    location: 'Primary Enclave',
     status: 'ONLINE',
     blocksValidated: 1,
     publicVerificationKeyHex: '7a9f8b1c4d2e5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
   },
   {
     id: 'val-bravo-02',
-    name: 'Bravo-Validator',
-    role: 'Redundant Tactical Node',
-    location: 'Bunker-B / Secure Comm Hub',
+    name: 'Validator Bravo',
+    role: 'Secondary Verification Node',
+    location: 'Secondary Enclave',
     status: 'ONLINE',
     blocksValidated: 1,
     publicVerificationKeyHex: '8b0a9c2d5e3f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1c',
   },
   {
     id: 'val-gamma-03',
-    name: 'Gamma-Validator',
-    role: 'Air-Gapped Audit Authority Node',
-    location: 'Strategic Operations Center',
+    name: 'Validator Gamma',
+    role: 'Audit Authority Node',
+    location: 'Audit Enclave',
     status: 'ONLINE',
     blocksValidated: 1,
     publicVerificationKeyHex: '9c1b0d3e6f4a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2d',
+  },
+  {
+    id: 'val-delta-04',
+    name: 'Validator Delta',
+    role: 'Redundant Consensus Node',
+    location: 'Recovery Enclave',
+    status: 'ONLINE',
+    blocksValidated: 1,
+    publicVerificationKeyHex: 'a1b2c3d4e5f67a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
   },
 ];
 
@@ -481,6 +490,10 @@ export class AirGappedLedger {
     return true;
   }
 
+  public simulateTamper(blockHeight: number, fakeRecipientId: string): boolean {
+    return this.simulateAdminTamperAttack(blockHeight, fakeRecipientId);
+  }
+
   /**
    * Restores tampered ledger records to the clean stored state.
    */
@@ -491,6 +504,11 @@ export class AirGappedLedger {
       return true;
     }
     // Re-create from memory snapshot if empty
+    return true;
+  }
+
+  public restoreLedger(): boolean {
+    this.restoreLedgerIntegrity();
     return true;
   }
 }

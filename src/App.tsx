@@ -1,20 +1,22 @@
 /**
  * Main Application Component:
- * Post-Quantum Cryptographic Attribution and Immutable Decryption Provenance System.
- * Refined Swiss & Cryptographic Laboratory Light Workstation with Beginner-Friendly Guided Tour.
+ * Cryptographic Attribution and Immutable Decryption Provenance System.
+ * Production-grade minimalist security & digital forensics UI architecture.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { ActiveTab } from './components/Navbar';
-import { SenderStudio } from './components/SenderStudio';
-import { RecipientPortal } from './components/RecipientPortal';
-import { ForensicStudio } from './components/ForensicStudio';
-import { DltExplorer } from './components/DltExplorer';
-import { PqcRegistry } from './components/PqcRegistry';
-import { WalkthroughTab } from './components/WalkthroughTab';
-import { SecurityTestHarness } from './components/SecurityTestHarness';
+import { ActiveTab } from './types/navigation';
+import { OverviewView } from './components/OverviewView';
+import { DocumentsView } from './components/DocumentsView';
+import { RecipientsView } from './components/RecipientsView';
+import { DecryptView } from './components/DecryptView';
+import { ForensicsView } from './components/ForensicsView';
+import { LedgerView } from './components/LedgerView';
+import { IdentityView } from './components/IdentityView';
+import { VerificationView } from './components/VerificationView';
+import { SettingsView } from './components/SettingsView';
 import { GuidedTourIntroModal } from './components/guided/GuidedTourIntroModal';
 import { FloatingMissionGuide } from './components/guided/FloatingMissionGuide';
 import { TOUR_STEPS } from './types/tour';
@@ -22,17 +24,14 @@ import {
   SAMPLE_DOCUMENTS,
   initializeRecipientsAndLedger,
 } from './data/sampleData';
-import { Recipient, EncryptedPackage, ClassifiedDocument, UiMode } from './types';
+import { Recipient, EncryptedPackage, ClassifiedDocument } from './types';
 import { airGappedLedger } from './ledger/dlt';
 import { DistributionService } from './services/distributionService';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('walkthrough');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [uiMode, setUiMode] = useState<UiMode>(() => {
-    const saved = localStorage.getItem('sih26237_ui_mode');
-    return saved === 'guided' ? 'guided' : 'guided'; // default to guided for welcoming beginners
-  });
+  const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(false);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [documents, setDocuments] = useState<ClassifiedDocument[]>(SAMPLE_DOCUMENTS);
   const [activePackage, setActivePackage] = useState<EncryptedPackage | null>(null);
@@ -41,24 +40,20 @@ export default function App() {
   const [blocksCount, setBlocksCount] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Guided Tour State
+  // Guided Detective Tour State
   const [showIntroModal, setShowIntroModal] = useState<boolean>(() => {
     const hasSeen = localStorage.getItem('sih26237_has_seen_tour_intro');
     return !hasSeen;
   });
   const [tourStepId, setTourStepId] = useState<number>(1);
-  const [tourActive, setTourActive] = useState<boolean>(true);
-
-  const handleToggleUiMode = (mode: UiMode) => {
-    setUiMode(mode);
-    localStorage.setItem('sih26237_ui_mode', mode);
-    if (mode === 'guided') {
-      setTourActive(true);
-    }
-  };
+  const [tourActive, setTourActive] = useState<boolean>(false);
 
   const handleAddDocument = (newDoc: ClassifiedDocument) => {
     setDocuments((prev) => [newDoc, ...prev]);
+  };
+
+  const handleRecipientAdded = (newRecip: Recipient) => {
+    setRecipients((prev) => [...prev, newRecip]);
   };
 
   const handleResetSession = () => {
@@ -85,8 +80,7 @@ export default function App() {
 
   // Visual Spotlight Manager based on active tour step
   useEffect(() => {
-    if (!tourActive || uiMode !== 'guided') {
-      // Remove any leftover spotlights
+    if (!tourActive) {
       document.querySelectorAll('.tour-spotlight-active').forEach((el) => {
         el.classList.remove('tour-spotlight-active');
       });
@@ -96,7 +90,6 @@ export default function App() {
     const currentStep = TOUR_STEPS.find((s) => s.id === tourStepId);
     if (!currentStep || !currentStep.highlightSelector) return;
 
-    // Small delay to ensure tab DOM nodes are mounted
     const timeout = setTimeout(() => {
       document.querySelectorAll('.tour-spotlight-active').forEach((el) => {
         el.classList.remove('tour-spotlight-active');
@@ -109,7 +102,7 @@ export default function App() {
     }, 150);
 
     return () => clearTimeout(timeout);
-  }, [tourActive, tourStepId, activeTab, uiMode]);
+  }, [tourActive, tourStepId, activeTab]);
 
   const refreshBlocksCount = () => {
     setBlocksCount(airGappedLedger.getChain().length);
@@ -126,10 +119,9 @@ export default function App() {
   const handleStartTourFromIntro = () => {
     setShowIntroModal(false);
     localStorage.setItem('sih26237_has_seen_tour_intro', 'true');
-    setUiMode('guided');
     setTourActive(true);
     setTourStepId(1);
-    setActiveTab('sender');
+    setActiveTab('documents');
   };
 
   const handleDismissIntroModal = () => {
@@ -149,7 +141,7 @@ export default function App() {
         const pkg = await DistributionService.createEncryptedPackage(doc, [alice, bob]);
         setActivePackage(pkg);
         setTourStepId(2);
-        setActiveTab('recipient');
+        setActiveTab('decrypt');
       } else if (tourStepId === 2) {
         // Step 2: Ensure package exists and decrypt for Alice
         let pkg = activePackage;
@@ -160,7 +152,7 @@ export default function App() {
         await DistributionService.executeRecipientDecryption(pkg, alice);
         refreshBlocksCount();
         setTourStepId(3);
-        setActiveTab('recipient');
+        setActiveTab('decrypt');
       } else if (tourStepId === 3) {
         // Step 3: Decrypt for Bob and leak
         let pkg = activePackage;
@@ -182,7 +174,8 @@ export default function App() {
         setActiveTab('ledger');
       } else if (tourStepId === 5) {
         // Step 5: Finished
-        setActiveTab('walkthrough');
+        setActiveTab('overview');
+        setTourActive(false);
       }
     } catch (e) {
       console.error('Auto-execute error:', e);
@@ -191,89 +184,89 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-mono space-y-4">
-        <div className="w-8 h-8 border-3 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <div className="text-xs font-semibold tracking-wider text-slate-700 uppercase">
-          INITIALIZING POST-QUANTUM CRYPTOGRAPHIC ENCLAVE...
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 space-y-3 font-sans">
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="text-xs font-semibold text-slate-700">
+          Loading cryptographic keys and ledger state...
         </div>
-        <p className="text-xs text-slate-500 font-sans">
-          Loading NIST FIPS 203 (ML-KEM-768) and FIPS 204 (ML-DSA-65) Keystores
+        <p className="text-[11px] text-slate-400">
+          NIST FIPS 203 (ML-KEM-768) &bull; FIPS 204 (ML-DSA-65)
         </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-indigo-500/15 selection:text-indigo-950 font-sans antialiased">
-      {/* Beginner Welcome Briefing Modal */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased">
+      {/* Intro Modal on First Visit */}
       <GuidedTourIntroModal
         isOpen={showIntroModal}
         onStartTour={handleStartTourFromIntro}
         onDismiss={handleDismissIntroModal}
       />
 
-      {/* Collapsible Left Navigation Sidebar with Persistent Telemetry */}
+      {/* Fixed Desktop Sidebar & Mobile Drawer */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         blocksCount={blocksCount}
-        uiMode={uiMode}
-        onToggleUiMode={handleToggleUiMode}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
       />
 
-      {/* Main Viewport Container */}
+      {/* Main Content Area (Scrolls Independently; offset for fixed desktop sidebar) */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
+          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
         }`}
       >
-        {/* Modern Top Context Bar */}
         <TopBar
           activeTab={activeTab}
           activePackage={activePackage}
           blocksCount={blocksCount}
           onResetSession={handleResetSession}
+          onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 
-        {/* Workspace Content Viewport */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-          {activeTab === 'walkthrough' && (
-            <WalkthroughTab
+        {/* Viewport Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {activeTab === 'overview' && (
+            <OverviewView
               documents={documents}
               recipients={recipients}
-              onFinishDemo={() => {
-                setActiveTab('sender');
-                setTourStepId(1);
-              }}
-              uiMode={uiMode}
+              activePackage={activePackage}
+              onNavigateTab={(tab) => setActiveTab(tab)}
             />
           )}
 
-          {activeTab === 'sender' && (
-            <SenderStudio
+          {activeTab === 'documents' && (
+            <DocumentsView
               documents={documents}
               recipients={recipients}
               activePackage={activePackage}
               onPackageCreated={(pkg) => {
                 setActivePackage(pkg);
-                // Advance tour to Chapter 2
-                if (tourActive) {
-                  setTourStepId(2);
-                }
+                if (tourActive) setTourStepId(2);
               }}
-              onNavigateToRecipient={() => {
-                setActiveTab('recipient');
-                setTourStepId(2);
+              onNavigateToDecrypt={() => {
+                setActiveTab('decrypt');
+                if (tourActive) setTourStepId(2);
               }}
               onAddDocument={handleAddDocument}
-              uiMode={uiMode}
             />
           )}
 
-          {activeTab === 'recipient' && (
-            <RecipientPortal
+          {activeTab === 'recipients' && (
+            <RecipientsView
+              recipients={recipients}
+              onRecipientAdded={handleRecipientAdded}
+            />
+          )}
+
+          {activeTab === 'decrypt' && (
+            <DecryptView
               recipients={recipients}
               activePackage={activePackage}
               onDecryptionSuccess={() => {
@@ -281,46 +274,49 @@ export default function App() {
               }}
               onSimulateLeak={(txt, meta) => {
                 handleSimulateLeak(txt, meta);
-                // Advance tour to Chapter 4 (Forensics)
-                if (tourActive) {
-                  setTourStepId(4);
-                }
+                if (tourActive) setTourStepId(4);
               }}
               onNavigateToForensics={() => {
                 setActiveTab('forensics');
-                setTourStepId(4);
+                if (tourActive) setTourStepId(4);
               }}
               onNavigateToLedger={() => {
                 setActiveTab('ledger');
-                setTourStepId(5);
+                if (tourActive) setTourStepId(5);
               }}
-              uiMode={uiMode}
             />
           )}
 
           {activeTab === 'forensics' && (
-            <ForensicStudio
+            <ForensicsView
               initialLeakedText={leakedText}
               leakedMetadata={leakedMeta}
               onNavigateToLedger={() => {
                 setActiveTab('ledger');
-                setTourStepId(5);
+                if (tourActive) setTourStepId(5);
               }}
-              uiMode={uiMode}
             />
           )}
 
           {activeTab === 'ledger' && (
-            <DltExplorer onRefreshNeeded={refreshBlocksCount} uiMode={uiMode} />
+            <LedgerView onRefreshNeeded={refreshBlocksCount} />
           )}
 
-          {activeTab === 'pqc' && <PqcRegistry recipients={recipients} uiMode={uiMode} />}
+          {activeTab === 'identity' && (
+            <IdentityView recipients={recipients} />
+          )}
 
-          {activeTab === 'security' && <SecurityTestHarness recipients={recipients} uiMode={uiMode} />}
+          {activeTab === 'verification' && (
+            <VerificationView recipients={recipients} />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsView onResetSession={handleResetSession} />
+          )}
         </main>
 
-        {/* Floating Detective Mission Guide Companion */}
-        {uiMode === 'guided' && tourActive && (
+        {/* Floating Detective Guide Companion (Available if tour is started) */}
+        {tourActive && (
           <FloatingMissionGuide
             currentStepId={tourStepId}
             onSelectStep={(sId) => setTourStepId(sId)}
@@ -333,13 +329,13 @@ export default function App() {
         )}
 
         {/* Clean Laboratory Workstation Footer */}
-        <footer className="border-t border-slate-200 bg-white py-3.5 px-6 text-xs font-mono text-slate-500">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-            <span className="text-slate-600">
-              AEGIS-PQC &bull; Defense Provenance & Forensic Attribution Enclave
+        <footer className="border-t border-slate-200/90 bg-white py-3 px-6 text-xs text-slate-500">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span className="text-slate-600 font-medium">
+              AEGIS-PQC &bull; Cryptographic Attribution and Immutable Decryption Provenance
             </span>
-            <span className="text-slate-400">
-              NIST FIPS 203 (ML-KEM-768) &bull; NIST FIPS 204 (ML-DSA-65) &bull; Air-Gapped DLT Quorum
+            <span className="text-slate-400 font-mono text-[11px]">
+              NIST FIPS 203 (ML-KEM-768) &bull; NIST FIPS 204 (ML-DSA-65) &bull; 4-Node Consensus
             </span>
           </div>
         </footer>

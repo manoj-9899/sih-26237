@@ -11,40 +11,39 @@ import { airGappedStorage } from '../storage/airGappedStorage';
 
 export const SAMPLE_DOCUMENTS: ClassifiedDocument[] = [
   {
-    id: 'DOC-2026-AEGIS-991',
-    title: 'OPERATION AEGIS: Strategic Anti-Air Grid Deployment Protocol',
+    id: 'DOC-2026-CONF-991',
+    title: 'Confidential Research Report: Critical Infrastructure Security Matrix',
     classification: 'TOP SECRET // SCI',
-    caveats: 'NOFORN // ORCON // SPECIAL ACCESS REQUIRED',
-    originatingOffice: 'Directorate of Joint Strategic Operations, Section 4',
+    caveats: 'RESTRICTED DISSEMINATION // SPECIAL ACCESS REQUIRED',
+    originatingOffice: 'Directorate of Strategic Security Assessment',
     summary:
-      'Operational deployment blueprints, radar frequency hop tables, and missile battery staging coordinates for eastern theater perimeter defense.',
+      'Operational deployment blueprints, cryptographic migration timelines, and secure channel key-management protocols.',
     rawText: `================================================================================
-TOP SECRET // SCI // NOFORN // ORCON // EYES ONLY
-DOCUMENT CONTROL NUMBER: TS-SCI-2026-AEGIS-0091
-ORIGINATING AUTHORITY: JOINT STRATEGIC OPERATIONS DIRECTORATE
+TOP SECRET // SCI // RESTRICTED DISSEMINATION
+DOCUMENT CONTROL NUMBER: TS-SCI-2026-CR-0091
+ORIGINATING AUTHORITY: STRATEGIC SECURITY ASSESSMENT DIRECTORATE
 DATE: 28 SEPTEMBER 2026
 
-SUBJECT: STRATEGIC AIR-DEFENSE RADAR HOPPING MATRIX & THEATER DISPERSION
+SUBJECT: STRATEGIC INFRASTRUCTURE TRANSITION & POST-QUANTUM KEY MATRIX
 
 1. EXECUTIVE DIRECTIVE
-Under National Security Command Directive 14-B, the following operational matrix
-governs all quantum-hardened radar array synchronizations across Theater Sector 4.
-All personnel accessing this material are bound by statutory secrecy obligations.
+Under National Security Technical Directive 14-B, the following operational matrix
+governs all quantum-hardened communications arrays across primary infrastructure networks.
+All personnel accessing this material are bound by statutory confidentiality obligations.
 
-2. FREQUENCY HOPPING ALLOCATION TABLE (OCTOBER 2026 CYCLE)
-- Array Alpha-1 (Barents Vector):  14.285 GHz -> 14.890 GHz [Pseudorandom Shift: Delta-9]
-- Array Bravo-3 (Aegean Vector):   12.110 GHz -> 12.650 GHz [Pseudorandom Shift: Kappa-4]
-- Array Charlie-7 (Indo-Pacific):  15.420 GHz -> 16.020 GHz [Pseudorandom Shift: Sigma-1]
+2. FREQUENCY & KEY ALLOCATION TABLE (OCTOBER 2026 CYCLE)
+- Array Alpha-1 (Northern Hub): Primary Key Ring KEM-768 [Rotation: 30 Days]
+- Array Bravo-3 (Southern Hub): Secondary Key Ring KEM-768 [Rotation: 30 Days]
+- Array Charlie-7 (Central Hub): Redundant Key Ring KEM-768 [Rotation: 15 Days]
 
-3. COUNTER-MEASURE RESILIENCE DIRECTIVE
-In the event of an electronic warfare jamming sweep exceeding 45 dB threshold,
-ground tactical commanders shall initiate autonomous post-quantum encrypted fallback
-links utilizing the tactical ML-KEM-768 key encapsulation standard.
+3. RESILIENCE DIRECTIVE
+In the event of an unauthorized channel interception or network boundary anomaly,
+system controllers shall initiate autonomous post-quantum encrypted fallback
+utilizing the NIST ML-KEM-768 key encapsulation standard.
 
-4. SENSITIVE COMPARTMENT DISSEMINATION LIST
-Authorized billets: Chief Intelligence Analyst, Senior Logistics Director, Cyber Defense Lead.
-Any unauthorized reproduction, photographic capture, or leak constitutes treason under
-the Espionage Act. All distribution packets are forensically tagged at point of decryption.
+4. DISSEMINATION REGISTER
+Authorized personnel: Chief Intelligence Analyst, Senior Logistics Director, Systems Architect.
+All distribution packages are forensically watermarked at point of local decryption.
 ================================================================================`,
     visualPages: [],
     createdAt: 1790610000000,

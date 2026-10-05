@@ -10,7 +10,7 @@ import {
   Play,
 } from 'lucide-react';
 import { TOUR_STEPS, TourStep } from '../../types/tour';
-import { ActiveTab } from '../Navbar';
+import { ActiveTab } from '../../types/navigation';
 
 interface FloatingMissionGuideProps {
   currentStepId: number;

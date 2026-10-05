@@ -1,166 +1,209 @@
-# Plain-English Language Simplification Plan: Guided Tour
+# UI/UX Redesign Plan: Production Security & Digital Forensics Platform
 
-## Executive Summary & Core Principles
+## 1. Product Principle & Design Objective
 
-The goal of this plan is to eliminate unnecessary cryptographic jargon and complex military phrasings throughout the **Guided Tour** and **Walkthrough components**, ensuring that a complete beginner with **zero technical or cryptographic background** can immediately understand:
-* What the app does
-* What is happening on screen
-* What they need to do next
-* Why each action is important
-* What will happen immediately after they complete an action
+### Core Principle
+> **"Simple surface. Sophisticated system underneath."**
 
-### Guiding Plain-English Rules:
-1. **Short, conversational sentences**: Break long compound sentences into bite-sized thoughts.
-2. **Everyday analogies instead of algorithm names**:
-   * *NIST FIPS 203 (ML-KEM-768)* $\rightarrow$ **"Future-proof digital lock"**
-   * *Dynamic Steganography* $\rightarrow$ **"Invisible digital stamp / invisible watermark"**
-   * *Decapsulate CEK & Bind Provenance* $\rightarrow$ **"Unlock document with private key"**
-   * *Air-Gapped 3/3 DLT Quorum* $\rightarrow$ **"Tamper-proof logbook (copied across 3 secure computers)"**
-   * *Blind Forensic Attribution* $\rightarrow$ **"Digital blacklight scan"**
-   * *SSIM / Invariance Audit* $\rightarrow$ **"Visual check (making sure text looks 100% normal to the reader)"**
-3. **Direct imperative calls-to-action**: Tell the user exactly which button to click and where it is located.
-4. **Friendly, encouraging feedback**: Confirm success with plain words (*"Great job!"*, *"You did it!"*) before explaining what happened.
+The interface must present clear, human-understandable workflows and outcomes by default. Dense cryptographic specifications, 64-character hexadecimal values, raw signatures, Merkle inclusion proofs, and validator consensus mathematics are preserved completely, but **progressively disclosed** through clean expandable drawers, technical detail accordions, and evidence inspector views.
+
+### Design Objective
+- **Aesthetic**: Minimalist, calm, trustworthy, precise, modern, Swiss/laboratory clean.
+- **Color Palette**: Light near-white backgrounds (`bg-slate-50` / `bg-white`), dark slate typography (`text-slate-900` / `text-slate-500`), restrained indigo primary accent (`bg-indigo-600`), and clear status indicators (emerald green for verified/healthy, amber for pending/attention, rose for failed/tampered).
+- **Typography**: Inter (sans-serif) for general copy, headings, and tables. Monospace reserved strictly for hashes, fingerprints, public keys, and cryptographic IDs.
+- **Tone & Terminology**: Real-world digital forensics and document security terminology. Eradicate fictional military roleplay (*"SCIF Alpha"*, *"Strategic Anti-Air Grid"*, *"Tactical Node"*, *"Enclave Barrier"*, *"Cyber Defense Lead"*).
 
 ---
 
-## 1. Intro Modal Simplification (`GuidedTourIntroModal.tsx`)
+## 2. Navigation Architecture & Route Reorganization
 
-| Element | Current Technical Wording | Proposed Simplified Wording | Reason for Change |
-| :--- | :--- | :--- | :--- |
-| **Top Badge** | `Beginner Interactive Detective Tour` | `Quick 3-Minute Interactive Tour` | Shorter, sets an explicit, low-stress time expectation. |
-| **Main Title** | `Catching an Anonymous Document Leaker` | `How to Catch a Secret Document Leaker` | More active, conversational, and intriguing. |
-| **Welcome Paragraph** | *"Welcome to AEGIS-PQC. You are about to discover how modern defense intelligence uses post-quantum mathematics and invisible digital watermarks to catch unauthorized leakers with mathematical certainty."* | *"Welcome! When confidential files are sent to multiple people and someone leaks them online, all copies normally look identical—making it impossible to know who did it.<br><br>In this quick tour, you'll see how we use invisible digital watermarks to catch the leaker red-handed."* | Removes intimidating words like *"defense intelligence"*, *"post-quantum mathematics"*, and *"mathematical certainty"*. Explains the actual core problem in simple terms. |
-| **Card 1** | *"Lock the Safe: Put a top-secret file in a quantum-safe digital safe with separate keys for Alice and Bob."* | **1. Lock the Document**<br>Put a secret file inside a digital safe. We give personal keys only to Alice and Bob. | Shorter and cleaner. |
-| **Card 2** | *"Secret Digital Stamp: When Alice and Bob unlock the file, invisible watermarks are stamped between words."* | **2. Stamp Invisible Watermark**<br>When they open the file, an invisible code is stamped between the words on their screen. | Explains clearly that the stamp is in the words themselves. |
-| **Card 3** | *"The Traitor Leaks: Col. Bob leaks his copy online, believing nobody can trace it back to him."* | **3. Bob Leaks His Copy**<br>Bob shares his copy on a public website, thinking nobody can tell it came from him. | Replaces *"traitor"* and *"online forum"* with everyday phrasing. |
-| **Card 4** | *"Forensic Attribution: Scan the leak under our forensic blacklight to catch Bob red-handed with 100% confidence."* | **4. Catch the Leaker**<br>Scan the leaked text to reveal Bob's hidden watermark and prove his guilt. | Removes technical term *"forensic attribution"*. |
-| **Bottom Callout** | *"Zero technical background needed! We use simple everyday language, clear step-by-step guidance, and 1-click helpers if you ever get stuck."* | *"No tech skills needed! Follow the simple steps, or click 'Do for me' at any time to let the app do the work."* | Reassuring, punchy, and highlights the failsafe helper. |
-| **Primary Button**| `Start Interactive Guided Tour` | `Start the Tour →` | Clear, direct, action-oriented. |
-| **Skip Button** | `I'm an expert, skip to full workstation` | `Skip tour and explore on my own` | Friendly, not condescending to non-experts. |
+The navigation structure is updated to the clean 4-tier hierarchy:
 
----
+```
+WORKSPACE
+├── Overview         (Was: Mission Control)
+├── Documents        (Was: Sender Studio)
+├── Recipients       (Dedicated recipient management & key states)
+└── Decrypt          (Was: Recipient Portal)
 
-## 2. Floating Mission Guide Simplification (`FloatingMissionGuide.tsx`)
+INVESTIGATION
+├── Forensics        (Was: Forensic Studio)
+└── Ledger           (Was: Air-Gapped DLT)
 
-| Element | Current Technical Wording | Proposed Simplified Wording | Reason for Change |
-| :--- | :--- | :--- | :--- |
-| **Header Badge** | `GUIDED DETECTIVE MISSION • STEP 1 OF 5` | `STEP 1 OF 5 • DETECTIVE STORY` | Shorter, easy to read on mobile or smaller screens. |
-| **Scenario Header** | `The Real-World Scenario:` | `What's happening:` | More natural conversational English. |
-| **Action Header** | `Your Next Action:` | `What you should do:` | Direct and clear. |
-| **Importance Header**| `Why this is important:` | `Why this matters:` | Simpler and faster to scan. |
-| **Technical Drawer** | `Behind the Scenes (Cryptographic Engine)` | `For curious learners: What the math did` | Welcoming rather than intimidating jargon. |
-| **Do for me Button** | `Do for me` (icon + text) | `⚡ Auto-do this step` | Makes it immediately obvious that it will execute the action for them. |
-| **Next Step Button** | `Next Step →` / `Finish Tour` | `Continue to Next Step →` / `Done! Explore the App` | Clear sense of forward movement. |
+SECURITY
+├── Identity         (Was: PQC Registry)
+└── Verification     (Was: Security Stress Lab)
+
+SYSTEM
+└── Settings         (Environment, offline status, quorum parameters)
+```
+
+*Note: The active navigation state is managed via `ActiveTab`: `'overview' | 'documents' | 'recipients' | 'decrypt' | 'forensics' | 'ledger' | 'identity' | 'verification' | 'settings'`.*
 
 ---
 
-## 3. Step-by-Step Tour Content Simplification (`src/types/tour.ts`)
+## 3. Reusable Component System (`src/components/ui/designSystem.tsx`)
 
-### Step 1: Locking the Document (Sender Studio)
-* **Title**:
-  * *Current*: `Locking the Classified Document`
-  * *Simplified*: `Step 1: Lock the Secret Document`
-* **Story / Context**:
-  * *Current*: *"Imagine locking a secret file inside a high-tech safe box. Instead of giving everyone the same key combination, the safe creates a unique digital keyhole for each person you authorize."*
-  * *Simplified*: *"Imagine placing a secret file into a super-secure safe box. Instead of giving everyone the same key, the safe creates a separate digital key for each person you select."*
-* **Target Objective (What to do)**:
-  * *Current*: *"Select the top document, check Dr. Alice Vance and Col. Bob Martinez, then click 'Generate Encrypted Package'."*
-  * *Simplified*: *"1. Click the first document on the left.<br>2. Check Alice and Bob (leave Charlie unchecked).<br>3. Click the glowing button: **'Generate Encrypted Package'**."*
-* **Why this matters**:
-  * *Current*: *"If anyone without a key (like Charlie) intercepts the file, it looks like complete static gibberish that even future quantum supercomputers cannot crack."*
-  * *Simplified*: *"Because Charlie was not checked, he has no key. If he steals the file, he sees only scrambled gibberish that even future supercomputers cannot crack."*
-* **What happens next**:
-  * *New feedback explanation*: *"The document is now locked! Alice and Bob each have their own digital key. Next, we will see Alice unlock her copy."*
+A unified component library will replace disparate ad-hoc markup across all views:
 
----
+1. **Layout**:
+   * `PageShell`: Standard full-height page wrapper with consistent padding (`p-6 sm:p-8 lg:p-10`) and max-width boundaries (`max-w-6xl`).
+   * `PageHeader`: Consistent top header: `title` (large, semi-bold text), `description` (one-line muted explanation), and optional right-aligned primary `action`.
+   * `Section`: Standard content container with subtle borders (`border-slate-200/80`), white background, and generous internal padding.
+   * `Divider`: Minimal hairline divider.
 
-### Step 2: Alice Opens Her Copy (Recipient Portal)
-* **Title**:
-  * *Current*: `Alice Opens Her Copy (Zero-Width Watermark)`
-  * *Simplified*: `Step 2: Alice Opens Her Copy`
-* **Story / Context**:
-  * *Current*: *"When Alice uses her key to unlock the file, her screen secretly stamps an invisible code (zero-width characters) into the document before showing it to her. To Alice, the text looks 100% normal."*
-  * *Simplified*: *"When Alice uses her key to open the file, her screen secretly adds an invisible watermark between the words. To Alice's eyes, the document looks completely normal."*
-* **Target Objective (What to do)**:
-  * *Current*: *"Select Dr. Alice Vance, click 'Decrypt & Bind Provenance Event', then switch on the 'Inspect Steganographic Channel' toggle to see the hidden stamp."*
-  * *Simplified*: *"1. Click on **Dr. Alice Vance**.<br>2. Click the glowing button: **'Decrypt & View Document'**.<br>3. Click **'Inspect Stego Channel'** to see her hidden watermark."*
-* **Why this matters**:
-  * *Current*: *"Because the watermark is embedded dynamically right when Alice unlocks the file, she cannot share or screenshot it without carrying her secret digital fingerprint."*
-  * *Simplified*: *"Even if Alice copies the text or takes a screenshot, her secret invisible stamp is embedded in the words. We will always know this copy was hers."*
-* **What happens next**:
-  * *New feedback explanation*: *"Alice has opened her copy safely. Now let's switch to Bob, who will also open his copy—and decide to leak it!"*
+2. **Buttons & Actions**:
+   * `PrimaryButton`: High-contrast solid button with restrained indigo/slate focus.
+   * `SecondaryButton`: Clean bordered button for secondary actions.
+   * `DangerButton`: Red subtle/outline button for destructive actions (e.g. tamper simulation).
+   * `TextButton` / `IconButton`: Minimal utility buttons.
+
+3. **Status & Verification**:
+   * `StatusBadge`: Clean status indicator (`verified`, `pending`, `tampered`, `inactive`).
+   * `VerificationBadge`: Compact verified badge with green tick for signatures and ledger states.
+
+4. **Progressive Disclosure & Technical Details**:
+   * `TechnicalDetails`: Expandable accordion container hidden by default: *"[ View technical details ]"*.
+   * `KeyValueRow`: Horizontal key-value layout with monospace values and quick-copy action.
+   * `HashDisplay`: Truncated monospace hash with one-click copy (`0x7a9f...9a0b`).
+   * `DetailsDrawer`: Slide-over drawer for in-depth cryptographic inspection.
+
+5. **Workflows & States**:
+   * `EmptyState`: Friendly empty state with icon, message, and direct primary action button.
+   * `LoadingState`: Minimal spinner with contextual label.
+   * `ErrorState`: Clear error description with cause and remediation step.
 
 ---
 
-### Step 3: Bob Decrypts and Leaks the Document (Recipient Portal)
-* **Title**:
-  * *Current*: `Bob Decrypts and Leaks His Copy`
-  * *Simplified*: `Step 3: Bob Leaks His Copy Online`
-* **Story / Context**:
-  * *Current*: *"Now Col. Bob opens the same document. His screen stamps his own unique watermark. Believing his copy is anonymous, Bob decides to leak the file to an online forum!"*
-  * *Simplified*: *"Bob opens the same document using his own key. His screen stamps his unique watermark. Believing nobody can trace it back to him, Bob leaks his copy online!"*
-* **Target Objective (What to do)**:
-  * *Current*: *"Switch to Col. Bob Martinez, click 'Decrypt & Bind Provenance Event', and then click the red button 'Simulate Leak of Bob's Copy'."*
-  * *Simplified*: *"1. Click on **Col. Bob Martinez**.<br>2. Click **'Decrypt & View Document'**.<br>3. Click the red button: **'Simulate Leak of Bob's Copy'**."*
-* **Why this matters**:
-  * *Current*: *"Both Alice and Bob read the exact same words on screen. Bob has no idea his personal identity is invisibly stitched into the document text."*
-  * *Simplified*: *"Alice and Bob saw the exact same words on their screens. But Bob has no idea that his identity is invisibly hidden between the words of his copy."*
-* **What happens next**:
-  * *New feedback explanation*: *"The leaked text has been copied to our Forensic Lab! Let's scan it to find out who leaked it."*
+## 4. Screen-by-Screen Redesign Specifications
+
+### Screen 1: Overview (`OverviewView.tsx`)
+* **Header**: "Overview" — *System status, cryptographic readiness, and recent activity.*
+* **Top Status Strip**: 4 compact summary metrics (not oversized cards):
+  1. *System status*: Offline / Air-gapped (Local environment verified)
+  2. *Ledger health*: 4/4 Validator nodes active · Quorum operational
+  3. *Cryptographic readiness*: NIST FIPS 203 (ML-KEM-768) & FIPS 204 (ML-DSA-65) active
+  4. *Protected documents*: Active package count & recipient registrations
+* **Recent Provenance Activity**: Simple, scannable table/list showing recent decryption events, timestamps, recipient, block height, and signature verification status.
+* **Quick Actions**: "Distribute document" and "Analyze document".
+
+### Screen 2: Documents (`DocumentsView.tsx`, refactored from `SenderStudio.tsx`)
+* **Header**: "Documents" — *Manage protected documents and prepare secure distribution.*
+* **Primary Action**: "Upload document" (opens clean modal).
+* **Document List**: Minimal table/card list showing:
+  * Title, Classification tag (`TOP SECRET // SCI`, `SECRET`, `CONFIDENTIAL`), File type (`PDF`), Size, Updated date.
+* **Selection Detail Panel**: When a document is selected:
+  * Document summary, recipient checklist (Alice Vance, Bob Martinez, Charlie Chen), and security summary: `ML-KEM-768 · AES-256-GCM`.
+  * Primary Action: **"Encrypt & prepare distribution"**.
+  * Expandable *Technical details* (IV, GCM tag, CEK derivation metadata).
+
+### Screen 3: Recipients (`RecipientsView.tsx`, new dedicated screen)
+* **Header**: "Recipients" — *Manage authorized recipients and local cryptographic identities.*
+* **Recipient Rows**:
+  * Name, Role, Organization, Status (`Active`), Algorithms (`ML-KEM-768 · ML-DSA-65`), Key Fingerprint (short).
+* **Recipient Inspector**:
+  * Identity status, local private-key protection status, key registered date.
+  * *Technical details* drawer with public keys and exportable public credentials.
+* **Enrollment Action**: "Add recipient" with locally generated ML-KEM and ML-DSA keys.
+
+### Screen 4: Decrypt (`DecryptView.tsx`, refactored from `RecipientPortal.tsx`)
+* **Header**: "Decrypt document" — *Decrypt locally and create a signed provenance record.*
+* **Session Context**: Clean badge showing current local identity (*Signed in as Dr. Alice Vance* with an easy switcher for demonstration testing).
+* **Pre-decryption Summary**:
+  * Document ready for decryption.
+  * Guarantee checklist:
+    * ✓ Decrypted in local memory
+    * ✓ Unique forensic fingerprint created
+    * ✓ Decryption event digitally signed
+    * ✓ Provenance recorded in offline ledger
+  * Primary Action: **"Decrypt document"**.
+* **During Decryption**: Clean sequential checklist showing progress without permanent card clutter:
+  * ✓ Verify access $\rightarrow$ ✓ Recover encryption key $\rightarrow$ ✓ Decrypt document $\rightarrow$ ✓ Create forensic fingerprint $\rightarrow$ ✓ Sign decryption event $\rightarrow$ ✓ Record provenance.
+* **Post-Decryption View**:
+  * Clean document viewport with high legibility.
+  * Top bar showing: Forensic fingerprint (`WM-7A4C••••92E1`), Provenance (`Verified`), Ledger (`Block #X`), Signature (`Valid`).
+  * Action: "Download decrypted file" and "Simulate anonymous leak" (for demonstration).
+  * Expandable *Technical details* showing watermark payload diagnostics.
+
+### Screen 5: Forensics (`ForensicsView.tsx`, refactored from `ForensicStudio.tsx`)
+* **Header**: "Forensic verification" — *Upload a leaked document to identify its originating decryption event.*
+* **Input Area**: Minimalist document dropzone:
+  * *"Drop leaked document here or choose a file"* with quick-sample buttons (*"Load Bob's leaked copy"*).
+  * Primary Action: **"Analyze document"**.
+* **Forensic Attribution Result (Dominates the page)**:
+  * High-visibility status banner: **MATCH FOUND** (or No Watermark Detected).
+  * Attributed Recipient: Name, Role, Avatar.
+  * Decryption event reference: `EVT-2026-00482`.
+  * Forensic fingerprint: `WM-7A4C••••92E1`.
+  * Signature: `✓ Valid (ML-DSA-65)`.
+  * Ledger evidence: `✓ Verified in Block #X`.
+* **Evidence Chain**:
+  * Watermark extracted $\rightarrow$ Matched to decryption event $\rightarrow$ Recipient signature verified $\rightarrow$ Ledger evidence verified.
+* **Progressive Disclosure**: *Technical details* contains raw zero-width character extraction metrics, PSNR estimate, and Merkle inclusion proof.
+
+### Screen 6: Ledger (`LedgerView.tsx`, refactored from `DltExplorer.tsx`)
+* **Header**: "Ledger" — *Tamper-evident provenance for verified decryption events.*
+* **Top Status Strip**:
+  * Ledger integrity: `✓ Verified` · Quorum health: `4/4 Validator nodes active` · Total blocks: `N`.
+* **Compact Validator Grid**:
+  * 4 Validator cards (Alpha, Bravo, Gamma, Delta) showing node status (`Online`), enclave location, and validated block counts.
+* **Recent Provenance Timeline**:
+  * Clean event stream showing: Recipient name, Document title, Timestamp, Block height, and Signature verification badge.
+  * Clicking an event opens the full evidence drawer.
+* **Audit & Resilience Bench**:
+  * Clean action: "Audit entire chain".
+  * Test trigger: "Simulate administrative tamper" with immediate recovery action "Restore quorum integrity".
+* **Progressive Disclosure**: Raw block hashes, previous block hashes, Merkle roots, and validator signatures hidden behind *Technical details*.
+
+### Screen 7: Identity (`IdentityView.tsx`, refactored from `PqcRegistry.tsx`)
+* **Header**: "Cryptographic identities" — *Manage post-quantum identities used to protect access and verify decryption events.*
+* **Identity Roster**: Clean list with avatar, name, role, status, and algorithms.
+* **Identity Detail Card**:
+  * Key exchange: `ML-KEM-768` (Public key registered).
+  * Digital signature: `ML-DSA-65` (Public key registered).
+  * Private key: `Protected locally in encrypted keystore`.
+* **Enrollment Modal**:
+  * "Add recipient": Name, Role, Organization, Clearance.
+  * "Generate cryptographic identity" executes genuine `ml_kem768.keygen()` and `ml_dsa65.keygen()`.
+* **Progressive Disclosure**: Full public key hex strings and raw fingerprints placed inside *View technical details*.
+
+### Screen 8: Verification (`VerificationView.tsx`, refactored from `SecurityTestHarness.tsx`)
+* **Header**: "Security verification" — *Test the platform against defined attack scenarios.*
+* **Summary Banner**: 7 tests · 7 passed · Primary action: **"Run all tests"**.
+* **4 Organized Categories**:
+  1. *Cryptography*: Unauthorized decryption · Cross-recipient isolation · Ciphertext bit-flip tampering.
+  2. *Attribution*: Forged recipient signature rejection.
+  3. *Ledger*: Historical ledger tamper detection.
+  4. *Watermarking*: False-positive detection · Watermark corruption resistance.
+* **Test Row Layout**:
+  * Test title, one-line explanation, **Expected result** (replaces "Security guarantee"), Status badge (`Passed`), and button: *"[ View details ]"*.
+  * Expansion shows isolated execution logs without modifying real demo data.
+
+### Screen 9: Settings (`SettingsView.tsx`, new dedicated screen)
+* **Header**: "Settings" — *System configuration and environment parameters.*
+* **Clean Grouped Settings**:
+  * *Environment*: Air-gapped / offline local execution.
+  * *Storage*: Local IndexedDB persistence with session reset option.
+  * *Consensus*: 3/4 Quorum threshold configuration.
+  * *Cryptography*: NIST FIPS 203 & FIPS 204 active parameter sets.
+  * *System*: Application version `v2.4.0-pqc`.
 
 ---
 
-### Step 4: Scanning the Leaked Text (Forensic Lab)
-* **Title**:
-  * *Current*: `Scanning the Leaked Text & Proving the Culprit`
-  * *Simplified*: `Step 4: Scan the Leak & Catch the Culprit`
-* **Story / Context**:
-  * *Current*: *"The military intelligence unit discovers an anonymous leaked text on the internet. We put the leaked text under our forensic digital blacklight to discover who leaked it."*
-  * *Simplified*: *"Security officers found an anonymous leaked document on the internet. We run this text through our digital scanner to see whose invisible watermark is inside."*
-* **Target Objective (What to do)**:
-  * *Current*: *"Click the bright 'Execute Blind Forensic Attribution' button to scan the leaked text."*
-  * *Simplified*: *"Click the glowing button: **'Scan Leaked Text & Identify Source'**."*
-* **Why this matters**:
-  * *Current*: *"The scanner extracts Bob’s hidden watermark, checks the tamper-proof ledger, and proves mathematically in court that Bob was the source with 100% confidence."*
-  * *Simplified*: *"The scanner immediately finds Bob's hidden watermark and checks our secure records. We now have 100% indisputable proof that Bob leaked the file."*
-* **What happens next**:
-  * *New feedback explanation*: *"Bob is caught! But what if Bob tries to get an IT friend to delete his name from the system logs? Let's test that in Step 5."*
+## 5. Layout, Sidebar, and Responsive Implementation
+
+1. **Fixed Sidebar Architecture**:
+   * Desktop (`lg:`): Sidebar is fixed (`fixed inset-y-0 left-0 w-64`), with main content wrapper offset by `ml-64`. Main area scrolls independently without shifting the sidebar.
+   * Mobile/Tablet: Sleek top bar with hamburger menu opening a backdrop-blurred slide-in navigation drawer.
+2. **Interactive Tour Compatibility**:
+   * Preserves existing `TOUR_STEPS` and `FloatingMissionGuide.tsx` seamlessly with updated route keys (`overview`, `documents`, `decrypt`, `forensics`, `ledger`, `identity`, `verification`).
 
 ---
 
-### Step 5: Can Bob Erase the Evidence? (Air-Gapped Ledger)
-* **Title**:
-  * *Current*: `Can Bob’s Accomplice Erase the Evidence?`
-  * *Simplified*: `Step 5: Can Anyone Erase the Records?`
-* **Story / Context**:
-  * *Current*: *"What if Bob has a friend in the IT department who tries to edit the database logs to frame someone else or erase Bob’s name? Watch what happens when someone tampers with the history book."*
-  * *Simplified*: *"What if Bob's friend in IT tries to modify the database to erase Bob's name? Watch what happens when an attacker tries to tamper with the records."*
-* **Target Objective (What to do)**:
-  * *Current*: *"Click 'Simulate Rogue Admin Tamper', then click 'Audit Entire Ledger' to see the security alarm trigger immediately."*
-  * *Simplified*: *"1. Click the red button: **'Simulate Rogue Admin Tamper'**.<br>2. Click **'Audit Entire Ledger'** to watch the tamper alarm sound immediately.<br>3. Click **'Restore Quorum Integrity'** to fix it."*
-* **Why this matters**:
-  * *Current*: *"Because the ledger is synchronized across 3 independent validator computers using cryptographic hash chains, any modified letter breaks the mathematical math tree immediately."*
-  * *Simplified*: *"Because the record is synchronized across 3 independent computers, changing even a single letter breaks the mathematical chain and gets rejected instantly."*
-* **What happens next**:
-  * *New feedback explanation*: *"Integrity restored! You have completed the tour and learned how secret documents are protected, watermarked, and traced."*
+## 6. Implementation Steps
 
----
-
-## 4. Pipeline Stages Simplification in Mission Control (`WalkthroughTab.tsx`)
-
-| Stage Number | Current Technical Stage Name | Current Technical Subtext | Proposed Simplified Name | Proposed Simplified Subtext |
-| :---: | :--- | :--- | :--- | :--- |
-| **Stage 1** | `Broadcast Encrypt` | `AES-256-GCM + ML-KEM-768` | **Lock Document** | *Create 1 safe with separate keys* |
-| **Stage 2** | `Alice Decapsulates` | `Dynamic stego & ML-DSA sign` | **Alice Opens File** | *Stamps Alice's secret watermark* |
-| **Stage 3** | `Bob Decapsulates` | `Distinct session payload` | **Bob Opens File** | *Stamps Bob's secret watermark* |
-| **Stage 4** | `Invariance Audit` | `SSIM: 0.9998 verified` | **Visual Check** | *Documents look 100% identical* |
-| **Stage 5** | `Blind Attribution` | `Leak resolved via DLT proof` | **Scan Leaked Copy** | *Bob caught with 100% proof* |
-
----
-
-## 5. Summary of Simplification Benefits
-
-1. **Accessibility**: A student, journalist, manager, or military analyst with zero cryptography training can follow the entire flow in 3 minutes.
-2. **Confidence**: Every step tells the user **what they see**, **what to do**, and **what will happen next**.
-3. **No Dead Ends**: The `⚡ Auto-do this step` button remains available on every single step if the user prefers to watch the action rather than click manually.
-4. **Preserved Depth**: Cryptographic accuracy is not lost; technical details (`ML-KEM-768`, `Merkle Proofs`, `CRC-16`, `SHA-256`) are kept cleanly tucked into the expandable **"For curious learners"** drawer.
+1. **Phase 1**: Build unified design system primitives (`src/components/ui/designSystem.tsx`) providing `PageShell`, `PageHeader`, `Section`, buttons, badges, and `TechnicalDetails`.
+2. **Phase 2**: Refactor global navigation (`Sidebar.tsx`, `Navbar.tsx`, `TopBar.tsx`, and `App.tsx`) with updated route keys and fixed-sidebar layout.
+3. **Phase 3**: Create/update the 9 screens (`OverviewView`, `DocumentsView`, `RecipientsView`, `DecryptView`, `ForensicsView`, `LedgerView`, `IdentityView`, `VerificationView`, `SettingsView`).
+4. **Phase 4**: Update `tour.ts` navigation targets and ensure all existing backend services (`DistributionService`, `airGappedLedger`, `airGappedStorage`, `pqc`) remain 100% untouched.
+5. **Phase 5**: Verify responsive layout, test execution, run `npm run lint`, and verify production build with `compile_applet`.
