@@ -26,6 +26,7 @@ import { Recipient } from '../types';
 import { generateRecipientPqcKeys, bytesToHex } from '../crypto/pqc';
 import { airGappedLedger } from '../ledger/dlt';
 import { airGappedStorage } from '../storage/airGappedStorage';
+import { createUnifiedEncryptedKeystore, sanitizeRecipientForPersistence } from '../crypto/keystore';
 
 interface RecipientsViewProps {
   recipients: Recipient[];
@@ -45,17 +46,29 @@ export const RecipientsView: React.FC<RecipientsViewProps> = ({
   const [newRole, setNewRole] = useState('');
   const [newOrg, setNewOrg] = useState('');
   const [newClearance, setNewClearance] = useState<'TOP SECRET // SCI' | 'SECRET' | 'CONFIDENTIAL'>('SECRET');
+  const [newPassphrase, setNewPassphrase] = useState('');
 
   const selectedRecipient = recipients.find((r) => r.id === selectedRecipientId) || recipients[0];
 
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newRole.trim()) return;
+    if (!newName.trim() || !newRole.trim() || newPassphrase.length < 8) return;
 
     setIsGenerating(true);
     try {
       // Generate genuine NIST FIPS 203 (ML-KEM-768) and FIPS 204 (ML-DSA-65) keypair
       const keys = await generateRecipientPqcKeys();
+      const recipientId = `USR-${Date.now().toString(36).toUpperCase()}`;
+
+      // Encrypt private keys into keystore with user passphrase
+      const keystoreRecord = await createUnifiedEncryptedKeystore(
+        recipientId,
+        keys.fingerprint,
+        keys.kemSecretKey,
+        keys.dsaSecretKey,
+        newPassphrase
+      );
+      await airGappedStorage.saveKeystore(keystoreRecord);
 
       const initials = newName
         .split(' ')
@@ -64,13 +77,15 @@ export const RecipientsView: React.FC<RecipientsViewProps> = ({
         .slice(0, 2)
         .toUpperCase();
 
+      // In-memory recipient object with active keys
       const newRecipient: Recipient = {
-        id: `USR-${Date.now().toString(36).toUpperCase()}`,
+        id: recipientId,
         name: newName,
         role: newRole,
         organization: newOrg || 'Directorate of Intelligence',
         clearanceLevel: newClearance,
         avatarInitials: initials,
+        isUnlocked: true,
         keys: {
           kemAlgorithm: 'ML-KEM-768',
           kemPublicKeyHex: bytesToHex(keys.kemPublicKey),
@@ -78,13 +93,20 @@ export const RecipientsView: React.FC<RecipientsViewProps> = ({
           dsaAlgorithm: 'ML-DSA-65',
           dsaPublicKeyHex: bytesToHex(keys.dsaPublicKey),
           dsaSecretKeyHex: bytesToHex(keys.dsaSecretKey),
+          encryptedKeystore: keystoreRecord,
           keyFingerprint: keys.fingerprint,
           registeredAt: Date.now(),
         },
       };
 
       airGappedLedger.registerRecipient(newRecipient);
-      await airGappedStorage.saveRecipients([...recipients, newRecipient]);
+
+      // Persist ONLY sanitized record (no plaintext private keys in storage)
+      const sanitizedNew = sanitizeRecipientForPersistence(newRecipient, keystoreRecord);
+      const sanitizedExisting = recipients.map((r) =>
+        r.keys.encryptedKeystore ? sanitizeRecipientForPersistence(r, r.keys.encryptedKeystore) : r
+      );
+      await airGappedStorage.saveRecipients([...sanitizedExisting, sanitizedNew]);
 
       if (onRecipientAdded) {
         onRecipientAdded(newRecipient);
@@ -95,6 +117,7 @@ export const RecipientsView: React.FC<RecipientsViewProps> = ({
       setNewName('');
       setNewRole('');
       setNewOrg('');
+      setNewPassphrase('');
     } catch (err) {
       console.error('Enrollment error:', err);
     } finally {
@@ -301,8 +324,21 @@ export const RecipientsView: React.FC<RecipientsViewProps> = ({
                 </select>
               </div>
 
+              <div>
+                <label className="block text-slate-700 font-medium mb-1">Passphrase (min 8 chars)</label>
+                <input
+                  type="password"
+                  value={newPassphrase}
+                  onChange={(e) => setNewPassphrase(e.target.value)}
+                  placeholder="Secret passphrase to protect private keys"
+                  required
+                  minLength={8}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+
               <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900">
-                Generating will create a NIST FIPS 203 (ML-KEM-768) and FIPS 204 (ML-DSA-65) keypair in the local environment.
+                Generating will create NIST FIPS 203 (ML-KEM-768) and FIPS 204 (ML-DSA-65) keypairs encrypted at rest with PBKDF2 + AES-256-GCM. Plaintext private keys are never stored in persistence.
               </div>
 
               <div className="pt-2 flex justify-end gap-2">

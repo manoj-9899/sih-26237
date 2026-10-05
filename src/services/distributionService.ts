@@ -30,11 +30,14 @@ import {
 } from '../crypto/pqc';
 import {
   embedWatermarkInText,
+  embedWatermarkInPdf,
   extractWatermarkFromText,
+  extractWatermarkFromPdf,
   computeWatermarkCommitment,
 } from '../watermark/engine';
 import { airGappedLedger } from '../ledger/dlt';
 import { airGappedStorage } from '../storage/airGappedStorage';
+import { sessionManager, AuthenticatedSession } from '../crypto/sessionManager';
 
 export class DistributionService {
   /**
@@ -46,13 +49,19 @@ export class DistributionService {
     recipients: Recipient[],
     senderName = 'Directorate of Strategic Operations'
   ): Promise<EncryptedPackage> {
-    const rawBytes = new TextEncoder().encode(doc.rawText);
+    // 1. Identify raw binary bytes (Preserve original PDF binary Uint8Array if present)
+    const isPdf = doc.isPdf || (doc.pdfBytes && doc.pdfBytes.length > 0) || false;
+    const rawBytes = doc.pdfBytes && doc.pdfBytes.length > 0
+      ? doc.pdfBytes
+      : new TextEncoder().encode(doc.rawText);
+
+    // 2. Canonical document hash: calculated directly from the original bytes
     const originalDocumentHashSha256 = await sha256Hex(rawBytes);
 
-    // 1. Symmetric AES-256-GCM encryption with fresh random CEK
+    // 3. Symmetric AES-256-GCM encryption with fresh random CEK over complete binary bytes
     const encResult = await encryptDocumentContent(rawBytes);
 
-    // 2. Encapsulate CEK for each recipient using their NIST FIPS 203 (ML-KEM-768) public key
+    // 4. Encapsulate CEK for each recipient using their NIST FIPS 203 (ML-KEM-768) public key
     const envelopes = [];
     for (const recip of recipients) {
       const kemPubKeyBytes = hexToBytes(recip.keys.kemPublicKeyHex);
@@ -86,6 +95,9 @@ export class DistributionService {
       senderId: 'SNDR-STRATCOM-01',
       senderName,
       createdAt: Date.now(),
+      isPdf,
+      mimeType: doc.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
+      filename: doc.filename || `${doc.title.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'txt'}`,
     };
 
     await airGappedStorage.savePackage(pkg);
@@ -104,9 +116,14 @@ export class DistributionService {
    */
   public static async executeRecipientDecryption(
     pkg: EncryptedPackage,
-    recipient: Recipient
+    recipient: Recipient,
+    session?: AuthenticatedSession | null
   ): Promise<{
     watermarkedText: string;
+    decryptedBytes: Uint8Array;
+    isPdf?: boolean;
+    mimeType?: string;
+    filename?: string;
     decryptionEvent: DecryptionEvent;
     watermarkPayload: WatermarkPayload;
     blockHeight: number;
@@ -114,18 +131,42 @@ export class DistributionService {
     psnrEstimate: number;
     ssimEstimate: number;
   }> {
-    // 1. Locate recipient's envelope
+    // 1. Session Verification & Binding
+    const activeSession = session || sessionManager.getActiveSession();
+    const now = Date.now();
+    if (
+      !activeSession ||
+      activeSession.status !== 'ACTIVE' ||
+      !activeSession.unlockedKeys ||
+      now > activeSession.expiresAt
+    ) {
+      if (activeSession && now > activeSession.expiresAt) {
+        sessionManager.expireSession();
+      }
+      throw new Error('AuthenticationRequired: Decryption requires an active authenticated local session.');
+    }
+
+    if (activeSession.userId !== recipient.id) {
+      throw new Error(
+        `ImpersonationAttemptBlocked: Active session belongs to ${activeSession.userName} (${activeSession.userId}), cannot decrypt as ${recipient.name} (${recipient.id}).`
+      );
+    }
+
+    // 2. Locate recipient's envelope in package
     const envelope = pkg.envelopes.find((e) => e.recipientId === recipient.id);
     if (!envelope) {
       throw new Error(`Access Denied: Recipient ${recipient.name} is not authorized for this package.`);
     }
 
-    if (!recipient.keys.kemSecretKeyHex || !recipient.keys.dsaSecretKeyHex) {
-      throw new Error(`Hardware Keystore Error: Recipient ${recipient.name} missing local private keys.`);
+    // 3. Extract unlocked private keys from authenticated session
+    const kemSecretBytes = activeSession.unlockedKeys.kemSecretKey;
+    const dsaSecretBytes = activeSession.unlockedKeys.dsaSecretKey;
+
+    if (!kemSecretBytes || !dsaSecretBytes || kemSecretBytes.length !== 2400 || dsaSecretBytes.length !== 4032) {
+      throw new Error(`Hardware Keystore Error: Recipient ${recipient.name} has invalid or missing private keys in session.`);
     }
 
-    // 2. ML-KEM-768 Decapsulation of CEK
-    const kemSecretBytes = hexToBytes(recipient.keys.kemSecretKeyHex);
+    // 4. ML-KEM-768 Decapsulation of CEK
     const kemCiphertextBytes = base64ToBytes(envelope.kemCiphertextBase64);
     const wrappedCekBytes = base64ToBytes(envelope.wrappedCekBase64);
 
@@ -146,7 +187,13 @@ export class DistributionService {
       ivBytes,
       recoveredCek
     );
-    const rawPlaintext = new TextDecoder().decode(decryptedBytes);
+    const isPdf = pkg.isPdf || (decryptedBytes.length >= 5 && decryptedBytes[0] === 0x25 && decryptedBytes[1] === 0x50 && decryptedBytes[2] === 0x44 && decryptedBytes[3] === 0x46);
+    let rawPlaintext = '';
+    if (!isPdf) {
+      rawPlaintext = new TextDecoder().decode(decryptedBytes);
+    } else {
+      rawPlaintext = `[BINARY PDF DOCUMENT: ${pkg.filename || pkg.documentTitle}.pdf]\nSize: ${decryptedBytes.length} bytes\nStatus: Decrypted via ML-KEM-768 + AES-256-GCM\nHeader: %PDF-Binary-Preserved`;
+    }
 
     // 4. Generate dynamic, session-unique invisible forensic watermark
     const sessionId = crypto.randomUUID();
@@ -163,8 +210,18 @@ export class DistributionService {
       eccChecksum: 0,
     };
 
-    // Embed invisible watermark in text
+    // Embed invisible watermark in text (for text documents or diagnostic text representation)
     const watermarkedText = embedWatermarkInText(rawPlaintext, watermarkPayload);
+
+    // Embed invisible watermark into authentic PDF binary bytes if document is a PDF
+    let finalDecryptedBytes = decryptedBytes;
+    if (isPdf) {
+      try {
+        finalDecryptedBytes = await embedWatermarkInPdf(decryptedBytes, watermarkPayload);
+      } catch (embedErr) {
+        console.warn('PDF Watermark embedding fallback to original bytes:', embedErr);
+      }
+    }
 
     // 5. Construct Decryption Event Payload
     const documentHashSha256 = await sha256Hex(decryptedBytes);
@@ -196,7 +253,7 @@ export class DistributionService {
       },
     };
 
-    // 6. Recipient signs event payload using their own ML-DSA-65 private key (FIPS 204)
+    // 6. Recipient signs event payload using their own ML-DSA-65 private key (FIPS 204) from session
     const canonicalMessage = canonicalizeJson({
       eventId: eventPayload.eventId,
       documentId: eventPayload.documentId,
@@ -210,7 +267,6 @@ export class DistributionService {
       timestampEpochMs: eventPayload.timestampEpochMs,
     });
 
-    const dsaSecretBytes = hexToBytes(recipient.keys.dsaSecretKeyHex);
     const signatureBytes = signWithMlDsa65(
       new TextEncoder().encode(canonicalMessage),
       dsaSecretBytes
@@ -237,6 +293,10 @@ export class DistributionService {
 
     return {
       watermarkedText,
+      decryptedBytes: finalDecryptedBytes,
+      isPdf,
+      mimeType: pkg.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
+      filename: pkg.filename || `${pkg.documentTitle.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'txt'}`,
       decryptionEvent,
       watermarkPayload,
       blockHeight: committedBlock.height,
@@ -254,21 +314,68 @@ export class DistributionService {
    * 3. ML-DSA-65 post-quantum digital signature verification
    * 4. Merkle inclusion proof and hash-chain audit
    */
+  /**
+   * Phase 3: Forensic Extraction & Indisputable Attribution.
+   * Investigates a suspected leaked document (accepts raw text or binary PDF Uint8Array):
+   * 1. Blind extraction of embedded watermark (via PDF structural enclave or text layer)
+   * 2. CRC-16 payload integrity verification
+   * 3. Watermark commitment matching against ledger event
+   * 4. Immutable Ledger lookup
+   * 5. Recipient public key & fingerprint matching
+   * 6. ML-DSA-65 post-quantum digital signature verification
+   * 7. Merkle inclusion proof and hash-chain audit
+   * 8. Returns verified non-repudiation report
+   */
   public static async investigateLeakedDocument(
-    leakedText: string
+    leakedInput: string | Uint8Array,
+    suspectedDocumentHash?: string
   ): Promise<ForensicAttributionReport> {
     const reportId = `REP-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
     const evidenceChain: ForensicAttributionReport['evidenceChain'] = [];
 
     // Step 1: Blind Watermark Extraction
-    const extractedPayload = extractWatermarkFromText(leakedText);
+    let extractedPayload: WatermarkPayload | null = null;
+    let extractionSource: 'PDF' | 'TEXT' = 'TEXT';
+    let extractionError: string | undefined = undefined;
+
+    if (leakedInput instanceof Uint8Array) {
+      extractionSource = 'PDF';
+      const pdfExtractResult = await extractWatermarkFromPdf(leakedInput);
+      if (pdfExtractResult.success && pdfExtractResult.payload) {
+        extractedPayload = pdfExtractResult.payload;
+      } else {
+        extractionError = pdfExtractResult.error || `PDF extraction status: ${pdfExtractResult.status}`;
+        if (pdfExtractResult.status === 'CRC_FAILURE') {
+          evidenceChain.push({
+            step: 'Watermark Extraction',
+            description: 'Scanning PDF structural catalog enclave',
+            status: 'FAILED',
+            technicalDetail: `CRC-16 validation failed: ${pdfExtractResult.error || 'Checksum mismatch'}. Tampering detected.`,
+          });
+          return {
+            reportId,
+            analyzedAt: Date.now(),
+            watermarkExtracted: false,
+            merkleProofValid: false,
+            pqcSignatureValid: false,
+            ledgerIntegrityValid: false,
+            attributionVerdict: 'TAMPERED_WATERMARK',
+            confidenceScore: 0,
+            evidenceChain,
+          };
+        }
+      }
+    } else {
+      extractionSource = 'TEXT';
+      extractedPayload = extractWatermarkFromText(leakedInput);
+    }
 
     if (!extractedPayload) {
       evidenceChain.push({
         step: 'Watermark Extraction',
-        description: 'Scanning document frequency/unicode stego channels',
+        description: `Scanning document (${extractionSource}) steganographic channels`,
         status: 'FAILED',
-        technicalDetail: 'No valid synchronization marker (0xA55A) or zero-width sequence found.',
+        technicalDetail: extractionError || 'No valid synchronization marker (0xA55A) or structural enclave found.',
       });
 
       return {
@@ -278,7 +385,7 @@ export class DistributionService {
         merkleProofValid: false,
         pqcSignatureValid: false,
         ledgerIntegrityValid: false,
-        attributionVerdict: 'FAILED_EXTRACTION',
+        attributionVerdict: 'NO_WATERMARK',
         confidenceScore: 0,
         evidenceChain,
       };
@@ -286,7 +393,7 @@ export class DistributionService {
 
     evidenceChain.push({
       step: 'Watermark Extraction',
-      description: 'Extracted embedded 256-bit steganographic payload',
+      description: `Extracted authentic ${extractionSource === 'PDF' ? 'PDF structural enclave' : '256-bit steganographic'} payload`,
       status: 'VERIFIED',
       technicalDetail: `Recovered Session UUID: ${extractedPayload.sessionId} | Watermark ID: ${extractedPayload.watermarkId} | Recipient Fingerprint: ${extractedPayload.recipientFingerprint}`,
     });
@@ -310,13 +417,96 @@ export class DistributionService {
         merkleProofValid: false,
         pqcSignatureValid: false,
         ledgerIntegrityValid: false,
-        attributionVerdict: 'UNREGISTERED_EVENT',
-        confidenceScore: 25,
+        attributionVerdict: 'NO_MATCHING_EVENT',
+        confidenceScore: 0,
         evidenceChain,
       };
     }
 
     const { event, block } = match;
+
+    // Step 3: Watermark Commitment & Document Integrity Validation
+    const expectedCommitment = await computeWatermarkCommitment(
+      extractedPayload.sessionId,
+      event.recipientId,
+      event.documentHashSha256
+    );
+
+    if (expectedCommitment !== event.watermarkCommitment) {
+      evidenceChain.push({
+        step: 'Watermark Commitment Check',
+        description: 'Verifying cryptographic binding to registered document hash',
+        status: 'FAILED',
+        technicalDetail: `Commitment mismatch! Stored: ${event.watermarkCommitment.slice(0, 16)}... Recomputed: ${expectedCommitment.slice(0, 16)}...`,
+      });
+
+      return {
+        reportId,
+        analyzedAt: Date.now(),
+        watermarkExtracted: true,
+        watermarkPayload: extractedPayload,
+        matchedEvent: event,
+        matchedBlock: block,
+        merkleProofValid: false,
+        pqcSignatureValid: false,
+        ledgerIntegrityValid: false,
+        attributionVerdict: 'EVIDENCE_MISMATCH',
+        confidenceScore: 0,
+        evidenceChain,
+      };
+    }
+
+    // If suspectedDocumentHash is provided, verify it matches the event's originalDocumentHash
+    if (suspectedDocumentHash && suspectedDocumentHash !== event.documentHashSha256) {
+      evidenceChain.push({
+        step: 'Document Identity Binding',
+        description: 'Cross-verifying leaked document hash with registered event document hash',
+        status: 'FAILED',
+        technicalDetail: `Document Hash Mismatch! Leaked document hash: ${suspectedDocumentHash.slice(0, 16)}... does not match event document hash: ${event.documentHashSha256.slice(0, 16)}...`,
+      });
+
+      return {
+        reportId,
+        analyzedAt: Date.now(),
+        watermarkExtracted: true,
+        watermarkPayload: extractedPayload,
+        matchedEvent: event,
+        matchedBlock: block,
+        merkleProofValid: false,
+        pqcSignatureValid: false,
+        ledgerIntegrityValid: false,
+        attributionVerdict: 'EVIDENCE_MISMATCH',
+        confidenceScore: 0,
+        evidenceChain,
+      };
+    }
+
+    // Check Recipient Fingerprint match
+    const cleanExtractedFp = extractedPayload.recipientFingerprint.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanEventFp = event.recipientPubkeyFingerprint.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (cleanExtractedFp !== cleanEventFp) {
+      evidenceChain.push({
+        step: 'Recipient Fingerprint Validation',
+        description: 'Matching extracted public key fingerprint with event record',
+        status: 'FAILED',
+        technicalDetail: `Fingerprint mismatch: Extracted: ${cleanExtractedFp}, Recorded in event: ${cleanEventFp}.`,
+      });
+
+      return {
+        reportId,
+        analyzedAt: Date.now(),
+        watermarkExtracted: true,
+        watermarkPayload: extractedPayload,
+        matchedEvent: event,
+        matchedBlock: block,
+        merkleProofValid: false,
+        pqcSignatureValid: false,
+        ledgerIntegrityValid: false,
+        attributionVerdict: 'EVIDENCE_MISMATCH',
+        confidenceScore: 0,
+        evidenceChain,
+      };
+    }
 
     evidenceChain.push({
       step: 'Ledger Provenance Lookup',
@@ -325,7 +515,7 @@ export class DistributionService {
       technicalDetail: `Block Hash: ${block.blockHash.slice(0, 16)}... | Merkle Root: ${block.merkleRoot.slice(0, 16)}... | Validator Signatures: ${block.validatorSignatures.length}/3 Quorum Attested`,
     });
 
-    // Step 3: Global Ledger Chain Integrity Check
+    // Step 4: Global Ledger Chain Integrity Check
     const ledgerCheck = await airGappedLedger.verifyLedgerIntegrity();
     if (!ledgerCheck.isValid) {
       evidenceChain.push({
@@ -345,8 +535,8 @@ export class DistributionService {
         merkleProofValid: false,
         pqcSignatureValid: false,
         ledgerIntegrityValid: false,
-        attributionVerdict: 'TAMPERED_WATERMARK',
-        confidenceScore: 10,
+        attributionVerdict: 'LEDGER_INVALID',
+        confidenceScore: 0,
         evidenceChain,
       };
     }
@@ -358,7 +548,7 @@ export class DistributionService {
       technicalDetail: `All ${ledgerCheck.totalBlocksChecked} blocks and ${ledgerCheck.totalTransactionsChecked} transactions cryptographically intact. 0 administrative tampering detected.`,
     });
 
-    // Step 4: ML-DSA-65 Post-Quantum Digital Signature Verification
+    // Step 5: ML-DSA-65 Post-Quantum Digital Signature Verification
     const recipient = airGappedLedger.getRecipient(event.recipientId);
     let pqcSignatureValid = false;
 
@@ -401,8 +591,8 @@ export class DistributionService {
         merkleProofValid: true,
         pqcSignatureValid: false,
         ledgerIntegrityValid: true,
-        attributionVerdict: 'TAMPERED_WATERMARK',
-        confidenceScore: 40,
+        attributionVerdict: 'SIGNATURE_INVALID',
+        confidenceScore: 0,
         evidenceChain,
       };
     }
@@ -414,7 +604,7 @@ export class DistributionService {
       technicalDetail: `Valid mathematical proof: Recipient private key sk_DSA generated signature ${event.recipientSignatureBase64.slice(0, 24)}... Non-repudiation established.`,
     });
 
-    // Step 5: Final Resolution
+    // Step 6: Final Resolution
     return {
       reportId,
       analyzedAt: Date.now(),

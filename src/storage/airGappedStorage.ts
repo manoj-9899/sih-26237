@@ -132,6 +132,37 @@ class AirGappedStorage {
     }
   }
 
+  // --- KEYSTORES ---
+  public async saveKeystore(keystore: { keyId: string; [key: string]: any }): Promise<void> {
+    await this.isReady();
+    if (this.db) {
+      const tx = this.db.transaction(STORES.KEYSTORES, 'readwrite');
+      const store = tx.objectStore(STORES.KEYSTORES);
+      store.put(keystore);
+    } else {
+      const allStr = localStorage.getItem('sih_keystores');
+      const all = allStr ? JSON.parse(allStr) : {};
+      all[keystore.keyId] = keystore;
+      localStorage.setItem('sih_keystores', JSON.stringify(all));
+    }
+  }
+
+  public async getKeystore(keyId: string): Promise<any | null> {
+    await this.isReady();
+    if (this.db) {
+      return new Promise((resolve) => {
+        const tx = this.db!.transaction(STORES.KEYSTORES, 'readonly');
+        const req = tx.objectStore(STORES.KEYSTORES).get(keyId);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } else {
+      const allStr = localStorage.getItem('sih_keystores');
+      const all = allStr ? JSON.parse(allStr) : {};
+      return all[keyId] || null;
+    }
+  }
+
   // --- RECIPIENTS ---
   public async saveRecipients(recipients: any[]): Promise<void> {
     await this.isReady();

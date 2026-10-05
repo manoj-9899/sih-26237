@@ -13,6 +13,8 @@ import {
   Check,
   Plus,
   X,
+  FileUp,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   PageShell,
@@ -28,6 +30,7 @@ import {
 } from './ui/designSystem';
 import { ClassifiedDocument, Recipient, EncryptedPackage } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { validatePdfBytes } from '../crypto/pdfUtils';
 
 interface DocumentsViewProps {
   documents: ClassifiedDocument[];
@@ -58,6 +61,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   const [newClassification, setNewClassification] = useState<'TOP SECRET // SCI' | 'SECRET' | 'CONFIDENTIAL'>('CONFIDENTIAL');
   const [newSummary, setNewSummary] = useState('');
   const [newText, setNewText] = useState('');
+  const [uploadedPdfBytes, setUploadedPdfBytes] = useState<Uint8Array | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>('');
+  const [pdfFileSize, setPdfFileSize] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isPdfUpload, setIsPdfUpload] = useState<boolean>(true);
 
   const selectedDoc = documents.find((d) => d.id === selectedDocId) || documents[0];
 
@@ -81,9 +89,49 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
     }
   };
 
+  const handlePdfFileSelection = async (file: File) => {
+    setUploadError(null);
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const validation = validatePdfBytes(bytes);
+
+      if (!validation.isValid) {
+        setUploadError(`Invalid PDF File: ${validation.error || 'The uploaded file does not contain a valid %PDF- header.'}`);
+        setUploadedPdfBytes(null);
+        return;
+      }
+
+      setUploadedPdfBytes(bytes);
+      setPdfFileName(file.name);
+      setPdfFileSize(file.size);
+      if (!newTitle) {
+        setNewTitle(file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' '));
+      }
+      if (!newSummary) {
+        setNewSummary(`Classified PDF document (${(file.size / 1024).toFixed(1)} KB, PDF v${validation.version || '1.4'}).`);
+      }
+    } catch (err: any) {
+      setUploadError(`File read error: ${err.message || 'Could not parse selected file.'}`);
+      setUploadedPdfBytes(null);
+    }
+  };
+
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newText.trim() || !onAddDocument) return;
+    if (!newTitle.trim() || !onAddDocument) return;
+
+    if (isPdfUpload && !uploadedPdfBytes) {
+      setUploadError('Please select a valid PDF file to upload.');
+      return;
+    }
+
+    if (!isPdfUpload && !newText.trim()) {
+      setUploadError('Please enter document content.');
+      return;
+    }
 
     const newDoc: ClassifiedDocument = {
       id: `DOC-${Date.now().toString(36).toUpperCase()}`,
@@ -91,10 +139,17 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
       classification: newClassification,
       caveats: 'RESTRICTED DISSEMINATION',
       originatingOffice: 'Directorate of Strategic Operations',
-      summary: newSummary || 'Uploaded confidential report.',
-      rawText: newText,
+      summary: newSummary || (isPdfUpload ? 'Uploaded PDF binary report.' : 'Uploaded confidential report.'),
+      rawText: isPdfUpload
+        ? `[BINARY PDF DOCUMENT: ${pdfFileName || newTitle}]\nFile size: ${pdfFileSize} bytes\nFormat: application/pdf\nStatus: Ingested as raw binary stream`
+        : newText,
       visualPages: [],
       createdAt: Date.now(),
+      isPdf: isPdfUpload,
+      mimeType: isPdfUpload ? 'application/pdf' : 'text/plain',
+      filename: isPdfUpload ? (pdfFileName || `${newTitle.replace(/\s+/g, '_')}.pdf`) : `${newTitle.replace(/\s+/g, '_')}.txt`,
+      fileSizeBytes: isPdfUpload ? pdfFileSize : new TextEncoder().encode(newText).length,
+      pdfBytes: isPdfUpload && uploadedPdfBytes ? uploadedPdfBytes : undefined,
     };
 
     onAddDocument(newDoc);
@@ -103,6 +158,10 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
     setNewTitle('');
     setNewSummary('');
     setNewText('');
+    setUploadedPdfBytes(null);
+    setPdfFileName('');
+    setPdfFileSize(0);
+    setUploadError(null);
   };
 
   return (
@@ -324,6 +383,32 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
               </button>
             </div>
 
+            {/* Format Toggle: Real PDF vs Text */}
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setIsPdfUpload(true)}
+                className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
+                  isPdfUpload
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Upload Binary PDF (.pdf)
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPdfUpload(false)}
+                className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
+                  !isPdfUpload
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Raw Text Document
+              </button>
+            </div>
+
             <form onSubmit={handleUploadSubmit} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-700 font-medium mb-1">Document Title</label>
@@ -332,7 +417,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Strategic Evaluation Report 2026"
+                  placeholder={isPdfUpload ? 'e.g. Critical Defense Evaluation 2026' : 'e.g. Strategic Evaluation Report 2026'}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
@@ -350,17 +435,59 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">Document Content</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={newText}
-                  onChange={(e) => setNewText(e.target.value)}
-                  placeholder="Paste document body text here..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
+              {isPdfUpload ? (
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Select PDF File (Binary Stream Preserved)</label>
+                  <div className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl p-4 text-center bg-slate-50/60 relative">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      required={isPdfUpload}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handlePdfFileSelection(file);
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <FileUp className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
+                    {uploadedPdfBytes ? (
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-emerald-800 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{pdfFileName}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          {(pdfFileSize / 1024).toFixed(1)} KB &bull; %PDF Header Verified
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-semibold text-slate-700">Click or drop a PDF here</div>
+                        <div className="text-[11px] text-slate-400">Magic header %PDF-1.x verified in memory</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Document Content</label>
+                  <textarea
+                    required
+                    rows={5}
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    placeholder="Paste document body text here..."
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
 
               <div className="pt-2 flex justify-end gap-2">
                 <SecondaryButton size="sm" type="button" onClick={() => setShowUploadModal(false)}>

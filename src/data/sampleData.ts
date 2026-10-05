@@ -5,9 +5,11 @@
  */
 
 import { ClassifiedDocument, Recipient } from '../types';
-import { generateRecipientPqcKeys, bytesToHex } from '../crypto/pqc';
+import { generateRecipientPqcKeys, bytesToHex, hexToBytes } from '../crypto/pqc';
 import { airGappedLedger } from '../ledger/dlt';
 import { airGappedStorage } from '../storage/airGappedStorage';
+import { createUnifiedEncryptedKeystore, sanitizeRecipientForPersistence, unlockKeystoreRecord } from '../crypto/keystore';
+import { createMinimalValidPdf } from '../crypto/pdfUtils';
 
 export const SAMPLE_DOCUMENTS: ClassifiedDocument[] = [
   {
@@ -16,6 +18,11 @@ export const SAMPLE_DOCUMENTS: ClassifiedDocument[] = [
     classification: 'TOP SECRET // SCI',
     caveats: 'RESTRICTED DISSEMINATION // SPECIAL ACCESS REQUIRED',
     originatingOffice: 'Directorate of Strategic Security Assessment',
+    isPdf: true,
+    mimeType: 'application/pdf',
+    filename: 'Critical_Infrastructure_Security_Matrix.pdf',
+    fileSizeBytes: 442,
+    pdfBytes: createMinimalValidPdf('Critical Infrastructure Security Matrix - TOP SECRET // SCI'),
     summary:
       'Operational deployment blueprints, cryptographic migration timelines, and secure channel key-management protocols.',
     rawText: `================================================================================
@@ -129,11 +136,59 @@ export async function initializeRecipientsAndLedger(): Promise<Recipient[]> {
       // Check persistent IndexedDB for recipients
       const savedRecipients = await airGappedStorage.getRecipients();
       if (savedRecipients && savedRecipients.length > 0) {
-        INITIALIZED_RECIPIENTS = savedRecipients;
+        const demoPassphrases: Record<string, string> = {
+          'USR-ALICE-VANCE-01': 'AliceVance2026!',
+          'USR-BOB-MARTINEZ-02': 'BobMartinez2026!',
+          'USR-CHARLIE-CHEN-03': 'CharlieChen2026!',
+          'USR-DIANA-ROSS-04': 'DianaRoss2026!',
+        };
+
+        const loaded: Recipient[] = [];
+        let needsResave = false;
+
         for (const r of savedRecipients) {
+          const pass = demoPassphrases[r.id] || 'SihSecurePass2026!';
+          // Check if this is a legacy record with plaintext private keys
+          if (r.keys.kemSecretKeyHex && r.keys.dsaSecretKeyHex && !r.keys.encryptedKeystore) {
+            // MIGRATION: Encrypt plaintext keys into keystore and sanitize
+            const keystoreRecord = await createUnifiedEncryptedKeystore(
+              r.id,
+              r.keys.keyFingerprint,
+              hexToBytes(r.keys.kemSecretKeyHex),
+              hexToBytes(r.keys.dsaSecretKeyHex),
+              pass
+            );
+            await airGappedStorage.saveKeystore(keystoreRecord);
+            r.keys.encryptedKeystore = keystoreRecord;
+            needsResave = true;
+          }
+
+          // In-memory unlock for transitional demonstration view
+          if (r.keys.encryptedKeystore) {
+            try {
+              const keystore = (await airGappedStorage.getKeystore(r.id)) || r.keys.encryptedKeystore;
+              const unlocked = await unlockKeystoreRecord(keystore, pass);
+              r.keys.kemSecretKeyHex = unlocked.kemSecretKeyHex;
+              r.keys.dsaSecretKeyHex = unlocked.dsaSecretKeyHex;
+              r.isUnlocked = true;
+            } catch (unlockErr) {
+              console.warn(`[SampleData] Could not unlock keystore for ${r.id}:`, unlockErr);
+            }
+          }
+
+          loaded.push(r);
           airGappedLedger.registerRecipient(r);
         }
-        return savedRecipients;
+
+        if (needsResave) {
+          const sanitized = loaded.map((r) =>
+            sanitizeRecipientForPersistence(r, r.keys.encryptedKeystore!)
+          );
+          await airGappedStorage.saveRecipients(sanitized);
+        }
+
+        INITIALIZED_RECIPIENTS = loaded;
+        return loaded;
       }
 
       const recipientProfiles = [
@@ -177,8 +232,29 @@ export async function initializeRecipientsAndLedger(): Promise<Recipient[]> {
         // Generate real NIST FIPS 203 (ML-KEM-768) and FIPS 204 (ML-DSA-65) keypairs
         const keys = await generateRecipientPqcKeys();
 
+        // Distinct demo passphrases for standard test personnel
+        const demoPassphrases: Record<string, string> = {
+          'USR-ALICE-VANCE-01': 'AliceVance2026!',
+          'USR-BOB-MARTINEZ-02': 'BobMartinez2026!',
+          'USR-CHARLIE-CHEN-03': 'CharlieChen2026!',
+          'USR-DIANA-ROSS-04': 'DianaRoss2026!',
+        };
+        const pass = demoPassphrases[prof.id] || 'SihSecurePass2026!';
+
+        // Create unified encrypted keystore at rest
+        const keystoreRecord = await createUnifiedEncryptedKeystore(
+          prof.id,
+          keys.fingerprint,
+          keys.kemSecretKey,
+          keys.dsaSecretKey,
+          pass
+        );
+        await airGappedStorage.saveKeystore(keystoreRecord);
+
+        // In-memory unlocked state for transitional demonstration view
         const recipient: Recipient = {
           ...prof,
+          isUnlocked: true,
           keys: {
             kemAlgorithm: 'ML-KEM-768',
             kemPublicKeyHex: bytesToHex(keys.kemPublicKey),
@@ -186,6 +262,7 @@ export async function initializeRecipientsAndLedger(): Promise<Recipient[]> {
             dsaAlgorithm: 'ML-DSA-65',
             dsaPublicKeyHex: bytesToHex(keys.dsaPublicKey),
             dsaSecretKeyHex: bytesToHex(keys.dsaSecretKey),
+            encryptedKeystore: keystoreRecord,
             keyFingerprint: keys.fingerprint,
             registeredAt: Date.now() - 3600000 * 24 * 7, // 7 days ago
           },
@@ -195,7 +272,11 @@ export async function initializeRecipientsAndLedger(): Promise<Recipient[]> {
         airGappedLedger.registerRecipient(recipient);
       }
 
-      await airGappedStorage.saveRecipients(recipients);
+      // Persist ONLY sanitized recipient records (NO PLAINTEXT PRIVATE KEYS in persistent storage)
+      const sanitizedRecipients = recipients.map((r) =>
+        sanitizeRecipientForPersistence(r, r.keys.encryptedKeystore!)
+      );
+      await airGappedStorage.saveRecipients(sanitizedRecipients);
       INITIALIZED_RECIPIENTS = recipients;
       return recipients;
     })();

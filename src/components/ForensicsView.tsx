@@ -12,6 +12,8 @@ import {
   Layers,
   Copy,
   Check,
+  FileUp,
+  X,
 } from 'lucide-react';
 import {
   PageShell,
@@ -40,24 +42,43 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
   onNavigateToLedger,
 }) => {
   const [leakedContent, setLeakedContent] = useState<string>(initialLeakedText || '');
+  const [leakedPdfBytes, setLeakedPdfBytes] = useState<Uint8Array | null>(null);
+  const [leakedPdfName, setLeakedPdfName] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [report, setReport] = useState<ForensicAttributionReport | null>(null);
 
   useEffect(() => {
     if (initialLeakedText) {
       setLeakedContent(initialLeakedText);
+      setLeakedPdfBytes(null);
+      setLeakedPdfName('');
       setReport(null);
     }
   }, [initialLeakedText]);
 
+  const handlePdfUpload = async (file: File) => {
+    if (!file) return;
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      setLeakedPdfBytes(bytes);
+      setLeakedPdfName(file.name);
+      setLeakedContent(`[LOADED LEAKED PDF FILE: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]\nBinary Stream ready for structural forensic analysis.`);
+      setReport(null);
+    } catch (err) {
+      console.error('Failed to read uploaded PDF:', err);
+    }
+  };
+
   const handleRunAnalysis = async () => {
-    if (!leakedContent.trim()) return;
+    if (!leakedPdfBytes && !leakedContent.trim()) return;
 
     setIsAnalyzing(true);
     try {
       // Simulate visual scan time for comprehension
       await new Promise((r) => setTimeout(r, 400));
-      const result = await DistributionService.investigateLeakedDocument(leakedContent);
+      const input = leakedPdfBytes ? leakedPdfBytes : leakedContent;
+      const result = await DistributionService.investigateLeakedDocument(input);
       setReport(result);
     } catch (err) {
       console.error('Forensic analysis error:', err);
@@ -68,6 +89,8 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
 
   const handleClear = () => {
     setLeakedContent('');
+    setLeakedPdfBytes(null);
+    setLeakedPdfName('');
     setReport(null);
   };
 
@@ -80,37 +103,63 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
 
       <div className="space-y-6">
         {/* 1. DOCUMENT DROPZONE & INPUT AREA */}
-        <Section title="Suspected leaked document" description="Upload or paste text from an unauthorized document copy.">
+        <Section title="Suspected leaked document" description="Upload a leaked PDF file or paste unauthorized text.">
           <div className="space-y-4 pt-1">
-            {/* Minimal Drop Area */}
-            <div className="p-6 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-300 transition-colors bg-slate-50/60 text-center space-y-2">
-              <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-              <div className="text-xs font-semibold text-slate-800">
-                Drop leaked document here or choose a file
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Supports extracted PDF or text files (.pdf, .txt)
-              </p>
+            {/* Minimal Drop Area for PDF */}
+            <div className="p-6 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-300 transition-colors bg-slate-50/60 text-center space-y-2 relative">
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePdfUpload(file);
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <FileUp className="w-6 h-6 text-slate-400 mx-auto" />
+              {leakedPdfBytes ? (
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-emerald-800 flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>{leakedPdfName}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    {(leakedPdfBytes.length / 1024).toFixed(1)} KB &bull; Ready for blind forensic enclave scan
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-slate-800">
+                    Drop leaked PDF here or click to browse
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Inspects deep /ForensicProvenance structural catalog enclaves
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Document Text Input */}
+            {/* Document Text Input / Status */}
             <div>
               <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                <span className="font-medium">Document content:</span>
+                <span className="font-medium">Document content / status:</span>
                 {leakedMetadata && (
                   <span className="text-[11px] text-indigo-600 font-medium">
-                    Loaded leaked copy: {leakedMetadata.title}
+                    Simulated leak copy: {leakedMetadata.title}
                   </span>
                 )}
               </div>
               <textarea
-                rows={5}
+                rows={4}
                 value={leakedContent}
+                readOnly={!!leakedPdfBytes}
                 onChange={(e) => {
                   setLeakedContent(e.target.value);
+                  setLeakedPdfBytes(null);
+                  setLeakedPdfName('');
                   setReport(null);
                 }}
-                placeholder="Paste the leaked document text here to scan for steganographic fingerprints..."
+                placeholder="Or paste leaked document text here to scan for steganographic fingerprints..."
                 className="w-full p-3.5 border border-slate-200 rounded-xl text-xs font-mono leading-relaxed bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
@@ -118,11 +167,13 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
             {/* Actions Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
               <span className="text-[11px] text-slate-500">
-                Scans invisible zero-width Unicode whitespace channels without modifying text.
+                {leakedPdfBytes
+                  ? 'Blindly extracts structural /ForensicProvenance enclave and validates CRC-16.'
+                  : 'Scans invisible zero-width Unicode whitespace channels without modifying text.'}
               </span>
 
               <div className="flex items-center gap-2">
-                {leakedContent && (
+                {(leakedContent || leakedPdfBytes) && (
                   <SecondaryButton size="sm" onClick={handleClear}>
                     Clear
                   </SecondaryButton>
@@ -132,7 +183,7 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
                   icon={<Search className="w-3.5 h-3.5" />}
                   onClick={handleRunAnalysis}
                   loading={isAnalyzing}
-                  disabled={!leakedContent.trim()}
+                  disabled={!leakedPdfBytes && !leakedContent.trim()}
                   data-tour-target="execute-attribution-btn"
                 >
                   {isAnalyzing ? 'Analyzing document...' : 'Analyze document'}
@@ -151,7 +202,7 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
               <VerificationBadge
                 label={
                   report.attributionVerdict === 'CONFIRMED_LEAK_SOURCE'
-                    ? 'Origin verified'
+                    ? 'VERIFIED'
                     : 'Unregistered'
                 }
               />
@@ -164,10 +215,10 @@ export const ForensicsView: React.FC<ForensicsViewProps> = ({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-rose-200/60">
                     <span className="text-xs font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                      MATCH FOUND &bull; ORIGINATING DECRYPTION IDENTIFIED
+                      FORENSIC VERIFICATION COMPLETE &bull; ORIGINATING DECRYPTION IDENTIFIED
                     </span>
-                    <span className="text-xs font-mono text-rose-900 bg-white px-2 py-0.5 rounded border border-rose-200 font-semibold">
-                      Measured Extraction Confidence: 100%
+                    <span className="text-xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 font-semibold">
+                      Cryptographic Evidence: VERIFIED
                     </span>
                   </div>
 

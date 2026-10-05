@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Unlock,
   Key,
@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Layers,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 import {
   PageShell,
@@ -29,6 +30,7 @@ import {
 } from './ui/designSystem';
 import { Recipient, EncryptedPackage, DecryptionEvent, WatermarkPayload } from '../types';
 import { DistributionService } from '../services/distributionService';
+import { sessionManager, AuthenticatedSession } from '../crypto/sessionManager';
 
 interface DecryptViewProps {
   recipients: Recipient[];
@@ -53,14 +55,25 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
   onNavigateToForensics,
   onNavigateToLedger,
 }) => {
-  // Current active local identity (Defaults to Alice Vance)
-  const [currentRecipientId, setCurrentRecipientId] = useState<string>(
-    recipients[0]?.id || 'USR-ALICE-VANCE-01'
+  // Session State directly driven by sessionManager
+  const [activeSession, setActiveSession] = useState<AuthenticatedSession | null>(() =>
+    sessionManager.getActiveSession()
   );
 
+  // Unlock credentials state for when locked
+  const [selectedUserId, setSelectedUserId] = useState<string>(recipients[0]?.id || '');
+  const [passphrase, setPassphrase] = useState<string>('');
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // Decryption execution state
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [decryptedResult, setDecryptedResult] = useState<{
     watermarkedText: string;
+    decryptedBytes?: Uint8Array;
+    isPdf?: boolean;
+    mimeType?: string;
+    filename?: string;
     decryptionEvent: DecryptionEvent;
     watermarkPayload: WatermarkPayload;
     blockHeight: number;
@@ -69,12 +82,49 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
   const [activeStep, setActiveStep] = useState<number>(0);
   const [showStegoChannel, setShowStegoChannel] = useState(false);
 
-  const currentRecipient =
-    recipients.find((r) => r.id === currentRecipientId) || recipients[0];
+  // Subscribe to sessionManager updates
+  useEffect(() => {
+    const unsubscribe = sessionManager.subscribe((session) => {
+      setActiveSession(session);
+      if (!session) {
+        setDecryptedResult(null);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
+  const currentRecipient = recipients.find((r) => r.id === activeSession?.userId) || null;
+
+  // Authorization: Does the active package contain an ML-KEM envelope for the authenticated recipient?
   const hasEnvelope = activePackage?.envelopes.some(
-    (e) => e.recipientId === currentRecipient?.id
+    (e) => e.recipientId === activeSession?.userId
   );
+
+  const handleUnlockKeystore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUnlockError(null);
+    const targetRecipient = recipients.find((r) => r.id === selectedUserId);
+    if (!targetRecipient) {
+      setUnlockError('Please select a local identity to unlock.');
+      return;
+    }
+
+    setIsUnlocking(true);
+    try {
+      await sessionManager.createSession(targetRecipient, passphrase);
+      setPassphrase('');
+      setUnlockError(null);
+    } catch (err: any) {
+      setUnlockError('Authentication failed: Incorrect passphrase or corrupted keystore.');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  const handleLockSession = () => {
+    sessionManager.lockSession();
+    setDecryptedResult(null);
+  };
 
   const handleExecuteDecryption = async () => {
     if (!activePackage || !currentRecipient || !hasEnvelope) return;
@@ -93,7 +143,8 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
 
       const result = await DistributionService.executeRecipientDecryption(
         activePackage,
-        currentRecipient
+        currentRecipient,
+        activeSession
       );
 
       setDecryptedResult(result);
@@ -112,7 +163,7 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
   };
 
   const handleTriggerLeak = () => {
-    if (!decryptedResult || !activePackage) return;
+    if (!decryptedResult || !activePackage || !currentRecipient) return;
     onSimulateLeak(decryptedResult.watermarkedText, {
       title: activePackage.documentTitle,
       recipientName: currentRecipient.name,
@@ -121,12 +172,28 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
   };
 
   const handleDownloadCopy = () => {
-    if (!decryptedResult || !activePackage) return;
-    const blob = new Blob([decryptedResult.watermarkedText], { type: 'text/plain' });
+    if (!decryptedResult || !activePackage || !currentRecipient) return;
+
+    const isPdf = decryptedResult.isPdf || activePackage.isPdf || false;
+    let blob: Blob;
+    let ext = 'txt';
+
+    if (isPdf && decryptedResult.decryptedBytes) {
+      // Ensure binary PDF bytes are downloaded with application/pdf MIME type
+      // Make sure a fresh ArrayBuffer copy is passed to Blob
+      const binaryCopy = new Uint8Array(decryptedResult.decryptedBytes).slice();
+      blob = new Blob([binaryCopy], { type: 'application/pdf' });
+      ext = 'pdf';
+    } else {
+      blob = new Blob([decryptedResult.watermarkedText], { type: 'text/plain;charset=utf-8' });
+      ext = 'txt';
+    }
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activePackage.documentTitle.replace(/\s+/g, '_')}_Decrypted_${currentRecipient.avatarInitials}.txt`;
+    const baseTitle = activePackage.documentTitle.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+    a.download = `${baseTitle}_Decrypted_${currentRecipient.avatarInitials}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -137,50 +204,118 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
         title="Decrypt document"
         description="Decrypt locally and create a signed provenance record."
         badge={
-          <StatusBadge status="verified" icon={<CheckCircle2 className="w-3 h-3 text-emerald-600" />}>
-            Local session active
-          </StatusBadge>
+          activeSession ? (
+            <StatusBadge status="verified" icon={<CheckCircle2 className="w-3 h-3 text-emerald-600" />}>
+              Session active ({activeSession.userName})
+            </StatusBadge>
+          ) : (
+            <StatusBadge status="neutral" icon={<Lock className="w-3 h-3 text-slate-500" />}>
+              Keystore locked
+            </StatusBadge>
+          )
         }
       />
 
-      {/* 1. SESSION IDENTITY CONTEXT & IDENTITY SWITCHER */}
-      <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-800 shrink-0">
-            {currentRecipient?.avatarInitials}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500 font-normal">Signed in as</span>
-              <strong className="text-slate-900 font-semibold">{currentRecipient?.name}</strong>
-              <span className="text-[10px] text-slate-400">({currentRecipient?.role})</span>
+      {/* 1. AUTHENTICATED SESSION VS LOCKED KEYSTORE STATE */}
+      {!activeSession ? (
+        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Unlock Local Keystore</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Authentication required. Enter your secret passphrase to decrypt your ML-KEM and ML-DSA private keys into ephemeral memory.
+              </p>
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Identity verified &bull; Keystore active &bull; Clearance: {currentRecipient?.clearanceLevel}
+            <div className="p-2 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-700">
+              <Key className="w-4 h-4" />
             </div>
           </div>
-        </div>
 
-        {/* Identity Demo Switcher */}
-        <div className="flex items-center gap-1.5 self-end sm:self-center">
-          <span className="text-[11px] text-slate-400">Switch identity:</span>
-          <select
-            value={currentRecipientId}
-            onChange={(e) => {
-              setCurrentRecipientId(e.target.value);
-              setDecryptedResult(null);
-              setShowStegoChannel(false);
-            }}
-            className="px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            {recipients.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+          <form onSubmit={handleUnlockKeystore} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
+            <div className="sm:col-span-4">
+              <label className="block text-slate-700 font-medium text-xs mb-1">Select local personnel account</label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => {
+                  setSelectedUserId(e.target.value);
+                  setUnlockError(null);
+                }}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                {recipients.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-5">
+              <label className="block text-slate-700 font-medium text-xs mb-1">Passphrase</label>
+              <input
+                type="password"
+                value={passphrase}
+                onChange={(e) => {
+                  setPassphrase(e.target.value);
+                  setUnlockError(null);
+                }}
+                placeholder="Enter passphrase (e.g. AliceVance2026!)"
+                required
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <PrimaryButton size="md" type="submit" loading={isUnlocking} className="w-full">
+                Unlock Keystore
+              </PrimaryButton>
+            </div>
+          </form>
+
+          {unlockError && (
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{unlockError}</span>
+            </div>
+          )}
+
+          <div className="p-3 bg-slate-50/70 border border-slate-200/80 rounded-lg text-[11px] text-slate-500 space-y-1">
+            <strong className="text-slate-700">Demo Passphrases:</strong>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-slate-600 pt-0.5">
+              <span>Dr. Alice: <strong className="text-slate-800">AliceVance2026!</strong></span>
+              <span>Col. Bob: <strong className="text-slate-800">BobMartinez2026!</strong></span>
+              <span>Cmdr. Charlie: <strong className="text-slate-800">CharlieChen2026!</strong></span>
+              <span>Amb. Diana: <strong className="text-slate-800">DianaRoss2026!</strong></span>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-800 shrink-0">
+              {activeSession.avatarInitials}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-normal">Active Session:</span>
+                <strong className="text-slate-900 font-semibold">{activeSession.userName}</strong>
+                <span className="text-[10px] text-slate-400">({activeSession.userRole})</span>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                Session ID: <span className="font-mono text-slate-700">{activeSession.sessionId.slice(0, 8)}...</span> &bull; 
+                Clearance: {activeSession.userClearance} &bull; 
+                Key FP: <span className="font-mono text-slate-700">{activeSession.keyFingerprint}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            <SecondaryButton size="sm" icon={<Lock className="w-3 h-3 text-slate-500" />} onClick={handleLockSession}>
+              Lock session
+            </SecondaryButton>
+          </div>
+        </div>
+      )}
 
       {/* 2. DOCUMENT READY STATUS & PRE-DECRYPTION CHECKLIST */}
       {activePackage ? (
@@ -188,11 +323,15 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
           title="Document ready for decryption"
           description={activePackage.documentTitle}
           action={
-            hasEnvelope ? (
+            !activeSession ? (
+              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                Authentication required
+              </span>
+            ) : hasEnvelope ? (
               <VerificationBadge label="Decryption authorized" />
             ) : (
               <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                Not authorized
+                Not authorized for {activeSession.userName}
               </span>
             )
           }
@@ -217,7 +356,7 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
             {/* Before you continue checklist */}
             <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2">
               <span className="text-xs font-semibold text-slate-900 block">
-                Before you continue:
+                Security assertions:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
@@ -247,10 +386,16 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
                   icon={<Unlock className="w-4 h-4" />}
                   onClick={handleExecuteDecryption}
                   loading={isDecrypting}
-                  disabled={!hasEnvelope}
+                  disabled={!activeSession || !hasEnvelope}
                   data-tour-target="decrypt-recipient-btn"
                 >
-                  {isDecrypting ? 'Executing decryption pipeline...' : 'Decrypt document'}
+                  {!activeSession
+                    ? 'Unlock keystore to decrypt'
+                    : !hasEnvelope
+                    ? 'Unauthorized (No Envelope)'
+                    : isDecrypting
+                    ? 'Executing decryption pipeline...'
+                    : 'Execute authenticated decryption'}
                 </PrimaryButton>
               </div>
             )}
@@ -321,7 +466,7 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
                       <div>Timestamp: {new Date(decryptedResult.watermarkPayload.timestamp).toLocaleTimeString()}</div>
                     </div>
                     <p className="text-[11px] text-sky-800 pt-1 font-sans">
-                      The document text displayed below is visually 100% normal. The watermark is encoded steganographically using zero-width Unicode characters.
+                      The document displayed below is visually 100% normal. {decryptedResult.isPdf ? 'The watermark is embedded into the PDF structural catalog enclave (/ForensicProvenance) and imperceptible page stream operators.' : 'The watermark is encoded steganographically using zero-width Unicode characters.'}
                     </p>
                   </div>
                 )}
@@ -334,7 +479,7 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
                 {/* Actions Bar & Leak Simulation Trigger */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <span className="text-[11px] text-slate-500">
-                    Document bound to {currentRecipient.name}&apos;s verified identity.
+                    Document bound to {currentRecipient?.name || 'Authorized Recipient'}&apos;s verified identity.
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -344,7 +489,7 @@ export const DecryptView: React.FC<DecryptViewProps> = ({
                       onClick={handleTriggerLeak}
                       data-tour-target="simulate-leak-btn"
                     >
-                      Simulate anonymous leak of {currentRecipient.name}&apos;s copy
+                      Simulate anonymous leak of {currentRecipient?.name || 'recipient'}&apos;s copy
                     </DangerButton>
                   </div>
                 </div>

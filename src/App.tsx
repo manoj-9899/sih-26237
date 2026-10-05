@@ -27,6 +27,7 @@ import {
 import { Recipient, EncryptedPackage, ClassifiedDocument } from './types';
 import { airGappedLedger } from './ledger/dlt';
 import { DistributionService } from './services/distributionService';
+import { sessionManager } from './crypto/sessionManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -149,7 +150,9 @@ export default function App() {
           pkg = await DistributionService.createEncryptedPackage(doc, [alice, bob]);
           setActivePackage(pkg);
         }
-        await DistributionService.executeRecipientDecryption(pkg, alice);
+        // Create authenticated session for Alice
+        const aliceSession = await sessionManager.createSession(alice, 'AliceVance2026!');
+        await DistributionService.executeRecipientDecryption(pkg, alice, aliceSession);
         refreshBlocksCount();
         setTourStepId(3);
         setActiveTab('decrypt');
@@ -160,7 +163,9 @@ export default function App() {
           pkg = await DistributionService.createEncryptedPackage(doc, [alice, bob]);
           setActivePackage(pkg);
         }
-        const bRes = await DistributionService.executeRecipientDecryption(pkg, bob);
+        // Create authenticated session for Bob
+        const bobSession = await sessionManager.createSession(bob, 'BobMartinez2026!');
+        const bRes = await DistributionService.executeRecipientDecryption(pkg, bob, bobSession);
         refreshBlocksCount();
         handleSimulateLeak(bRes.watermarkedText, {
           title: pkg.documentTitle,

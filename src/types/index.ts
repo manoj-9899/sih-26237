@@ -59,6 +59,9 @@ export interface EncryptedPackage {
   senderId: string;
   senderName: string;
   createdAt: number;
+  isPdf?: boolean;
+  mimeType?: string;
+  filename?: string;
 }
 
 export interface DecryptionEventPayload {
@@ -134,7 +137,17 @@ export interface ForensicAttributionReport {
   pqcSignatureValid: boolean;
   ledgerIntegrityValid: boolean;
   attributedRecipient?: Recipient;
-  attributionVerdict: 'CONFIRMED_LEAK_SOURCE' | 'TAMPERED_WATERMARK' | 'UNREGISTERED_EVENT' | 'FAILED_EXTRACTION';
+  attributionVerdict:
+    | 'CONFIRMED_LEAK_SOURCE'
+    | 'TAMPERED_WATERMARK'
+    | 'UNREGISTERED_EVENT'
+    | 'FAILED_EXTRACTION'
+    | 'NO_WATERMARK'
+    | 'INVALID_WATERMARK'
+    | 'NO_MATCHING_EVENT'
+    | 'SIGNATURE_INVALID'
+    | 'LEDGER_INVALID'
+    | 'EVIDENCE_MISMATCH';
   confidenceScore: number; // 0 to 100
   evidenceChain: Array<{
     step: string;
@@ -154,4 +167,10 @@ export interface ClassifiedDocument {
   rawText: string;
   visualPages: string[]; // SVGs / Canvas Data URLs
   createdAt: number;
+  // Binary PDF representation
+  isPdf?: boolean;
+  mimeType?: string; // e.g. 'application/pdf'
+  filename?: string;
+  fileSizeBytes?: number;
+  pdfBytes?: Uint8Array; // In-memory canonical binary buffer
 }

@@ -430,7 +430,7 @@ export class AirGappedLedger {
         txCount++;
         const recipient = this.registeredRecipients.get(tx.recipientId);
         if (recipient) {
-          const canonicalMessage = JSON.stringify({
+          const canonicalMessage = canonicalizeJson({
             eventId: tx.eventId,
             documentId: tx.documentId,
             documentHashSha256: tx.documentHashSha256,
