@@ -81,8 +81,7 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Guided Mode Guidance Panel */}
+    <div className="space-y-6">
       {uiMode === 'guided' && (
         <GuidancePanel
           stepNumber="3"
@@ -96,19 +95,19 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
       )}
 
       {/* 1. OPERATIONAL CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status="inspection" icon={<Fingerprint className="w-3 h-3 text-[#f0883e]" />}>
+            <StatusBadge status="inspection" icon={<Fingerprint className="w-3.5 h-3.5 text-sky-600" />}>
               FORENSIC LAB
             </StatusBadge>
-            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-[11px] font-mono text-slate-600 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
               BLIND STEGANOGRAPHY
             </span>
-            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-[11px] font-mono text-slate-600 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
               ML-DSA-65 (FIPS 204)
             </span>
-            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+            <span className="text-[11px] font-mono text-emerald-700 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
               LEDGER VERIFIED
             </span>
           </div>
@@ -119,7 +118,7 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
               size="sm"
               onClick={handleRunInvestigation}
               disabled={isAnalyzing || !leakedContent.trim()}
-              icon={<Search className="w-3 h-3" />}
+              icon={<Search className="w-3.5 h-3.5" />}
             >
               {isAnalyzing ? 'EXTRACTING...' : 'EXECUTE BLIND ATTRIBUTION'}
             </OperationalButton>
@@ -128,27 +127,27 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
       </WorkstationSurface>
 
       {/* 2. MAIN INVESTIGATION WORKBENCH */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column: Leaked Artifact Ingestion (col-span-5) */}
-        <div className="lg:col-span-5 space-y-4">
-          <WorkstationSurface variant="primary" className="p-4 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] text-xs font-mono">
-              <span className="font-semibold text-[#e6edf3] uppercase tracking-wider flex items-center gap-1.5">
-                <FileSearch className="w-3.5 h-3.5 text-[#adbac7]" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Leaked Artifact Ingestion */}
+        <div className="lg:col-span-5 space-y-6">
+          <WorkstationSurface variant="primary" className="space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 text-xs font-mono">
+              <span className="font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <FileSearch className="w-4 h-4 text-slate-600" />
                 Leaked Artifact Ingestion
               </span>
               {leakedMetadata && (
-                <span className="text-[10px] px-2 py-0.5 rounded bg-[#2b1012] text-[#f85149] border border-[#da3633]/40 font-bold">
-                  SIMULATED LEAK TARGET
+                <span className="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold">
+                  SIMULATED TARGET
                 </span>
               )}
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1.5 text-xs font-mono">
-                <span className="text-[#768390]">DOCUMENT CARRIER TEXT</span>
-                <label className="cursor-pointer text-[11px] text-[#adbac7] hover:text-[#e6edf3] flex items-center gap-1 transition-colors">
-                  <Download className="w-3 h-3 rotate-180 text-[#768390]" />
+                <span className="text-slate-500 font-medium">DOCUMENT CARRIER TEXT</span>
+                <label className="cursor-pointer text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium transition-colors">
+                  <Download className="w-3.5 h-3.5 rotate-180 text-indigo-600" />
                   <span>Upload .txt/.md</span>
                   <input
                     type="file"
@@ -176,7 +175,7 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                 onChange={(e) => setLeakedContent(e.target.value)}
                 placeholder="Paste leaked text here or trigger 'Simulate Leak' from the Recipient Portal..."
                 rows={11}
-                className="w-full p-3 rounded-md bg-[#0d0e12] border border-white/[0.08] font-mono text-xs text-[#c5cbd3] placeholder:text-[#57606a] focus:border-white/[0.24] focus:outline-none resize-none leading-relaxed"
+                className="w-full p-3.5 rounded-lg bg-slate-50 border border-slate-300 font-mono text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none leading-relaxed"
               />
             </div>
 
@@ -187,7 +186,8 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                 onClick={handleRunInvestigation}
                 disabled={isAnalyzing || !leakedContent.trim()}
                 className="w-full"
-                icon={<Search className="w-4 h-4 text-[#adbac7]" />}
+                icon={<Search className="w-4 h-4" />}
+                data-tour-target="execute-attribution-btn"
               >
                 {isAnalyzing
                   ? 'EXTRACTING STEGANOGRAPHY & QUERYING DLT...'
@@ -196,41 +196,40 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
             </div>
           </WorkstationSurface>
 
-          {/* Forensic Instrument Specifications */}
-          <WorkstationSurface variant="elevated" className="p-3.5 space-y-2 text-xs font-mono">
-            <span className="text-[11px] text-[#768390] uppercase font-bold tracking-wider block">
-              Forensic Extraction Engine Parameters
+          <WorkstationSurface variant="elevated" className="space-y-2.5 text-xs font-mono">
+            <span className="text-xs text-slate-900 uppercase font-bold tracking-wider block">
+              Forensic Extraction Parameters
             </span>
-            <div className="space-y-1 text-[11px] text-[#adbac7]">
-              <div className="flex justify-between">
-                <span className="text-[#768390]">Carrier Method:</span>
-                <span>Zero-Width Whitespace Permutation</span>
+            <div className="space-y-1.5 text-xs text-slate-700">
+              <div className="flex justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                <span className="text-slate-500">Carrier Method:</span>
+                <span className="font-semibold text-slate-800">Zero-Width Whitespace</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#768390]">Bit Invariance:</span>
-                <span>SSIM &gt; 0.999 &bull; PSNR &gt; 49 dB</span>
+              <div className="flex justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                <span className="text-slate-500">Bit Invariance:</span>
+                <span className="font-semibold text-slate-800">SSIM &gt; 0.999 &bull; PSNR &gt; 49 dB</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#768390]">False Positive Rate:</span>
-                <span>Zero Mathematical Ambiguity</span>
+              <div className="flex justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                <span className="text-slate-500">False Positive Rate:</span>
+                <span className="font-semibold text-emerald-700">Zero Mathematical Ambiguity</span>
               </div>
             </div>
           </WorkstationSurface>
         </div>
 
-        {/* Right Column: Formal Certificate & Evidence Chain (col-span-7) */}
-        <div className="lg:col-span-7 space-y-4">
-          <WorkstationSurface variant="primary" className="p-4 sm:p-5 flex flex-col h-full space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] text-xs font-mono">
+        {/* Right Column: Formal Certificate & Evidence Chain */}
+        <div className="lg:col-span-7 space-y-6">
+          <WorkstationSurface variant="primary" className="flex flex-col h-full space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 text-xs font-mono">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#7ee787]" />
-                <span className="font-semibold text-[#e6edf3] uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span className="font-semibold text-slate-900 uppercase tracking-wider">
                   Forensic Attribution Certificate
                 </span>
               </div>
               {report && (
-                <span className="text-[10px] text-[#768390]">
-                  REPORT REF: {report.reportId}
+                <span className="text-xs text-slate-500">
+                  REF: {report.reportId}
                 </span>
               )}
             </div>
@@ -239,55 +238,55 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
               <div className="space-y-4 flex-1 flex flex-col justify-between">
                 {/* Formal Verdict Determination */}
                 {report.attributionVerdict === 'CONFIRMED_LEAK_SOURCE' && report.attributedRecipient ? (
-                  <div className="p-4 rounded-md bg-[#2b1012] border border-[#da3633]/50 space-y-2.5">
+                  <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-[#f85149] uppercase tracking-wider flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" />
+                      <span className="text-xs font-mono font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
                         INDISPUTABLE LEAK ATTRIBUTION CONFIRMED
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/40 text-[#fca5a5] border border-[#da3633]/40 font-bold">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 font-bold">
                         CONFIDENCE: {report.confidenceScore}% (MATHEMATICAL CERTAINTY)
                       </span>
                     </div>
 
-                    <div className="pt-1.5 border-t border-[#da3633]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="pt-2 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-bold text-[#e6edf3]">
+                        <h3 className="text-base font-bold text-slate-900">
                           Perpetrator: {report.attributedRecipient.name}
                         </h3>
-                        <p className="text-xs text-[#adbac7] font-mono mt-0.5">
+                        <p className="text-xs text-slate-600 font-mono mt-0.5">
                           {report.attributedRecipient.role} &bull; {report.attributedRecipient.organization}
                         </p>
                       </div>
 
                       <div className="font-mono text-xs text-right">
-                        <span className="text-[10px] text-[#768390] block">SECURITY CLEARANCE</span>
-                        <span className="text-[#f85149] font-bold">{report.attributedRecipient.clearanceLevel}</span>
+                        <span className="text-[10px] text-slate-500 block">SECURITY CLEARANCE</span>
+                        <span className="text-rose-700 font-bold">{report.attributedRecipient.clearanceLevel}</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded bg-[#0d0e12] border border-white/[0.04] text-[11px] font-mono">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded-lg bg-white border border-rose-200 text-xs font-mono">
                       <div>
-                        <span className="text-[#768390] block text-[10px]">RECIPIENT ID</span>
-                        <span className="text-[#c5cbd3]">{report.attributedRecipient.id}</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">RECIPIENT ID</span>
+                        <span className="text-slate-800 font-medium">{report.attributedRecipient.id}</span>
                       </div>
                       <div>
-                        <span className="text-[#768390] block text-[10px]">COMMITTED BLOCK</span>
-                        <span className="text-[#7ee787] font-bold">Block #{report.matchedBlock?.height}</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">COMMITTED BLOCK</span>
+                        <span className="text-emerald-700 font-bold">Block #{report.matchedBlock?.height}</span>
                       </div>
                       <div>
-                        <span className="text-[#768390] block text-[10px]">PQC SIGNATURE</span>
-                        <span className="text-[#7ee787] font-bold">VALID (ML-DSA-65)</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">PQC SIGNATURE</span>
+                        <span className="text-emerald-700 font-bold">VALID (ML-DSA-65)</span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-md bg-[#261c10] border border-[#f0883e]/30 text-xs font-mono space-y-1">
-                    <div className="text-[#f0883e] font-bold flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs font-mono space-y-1">
+                    <div className="text-amber-800 font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
                       <span>EXTRACTION WARNING: {report.attributionVerdict}</span>
                     </div>
-                    <p className="text-[#adbac7] text-[11px] leading-relaxed">
+                    <p className="text-slate-700 text-xs leading-relaxed font-sans">
                       Unable to attribute this document. The text does not contain a recognized session watermark or does
                       not match an authentic Decryption Event recorded on the air-gapped ledger.
                     </p>
@@ -296,37 +295,37 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
 
                 {/* Evidence Chain Verification Matrix */}
                 <div className="space-y-2">
-                  <span className="text-[11px] font-mono uppercase font-semibold text-[#adbac7] block tracking-wider">
+                  <span className="text-xs font-mono uppercase font-semibold text-slate-700 block tracking-wider">
                     Deterministic Cryptographic Verification Chain
                   </span>
 
-                  <div className="space-y-1.5 font-mono text-xs">
+                  <div className="space-y-2 font-mono text-xs">
                     {report.evidenceChain.map((ev, idx) => (
                       <div
                         key={`evidence-step-${idx}-${ev.step}`}
-                        className="p-2.5 rounded-md bg-[#0d0e12] border border-white/[0.06] space-y-1"
+                        className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1"
                       >
-                        <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
                             {ev.status === 'VERIFIED' ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#7ee787] shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                             ) : (
-                              <XCircle className="w-3.5 h-3.5 text-[#f85149] shrink-0" />
+                              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
                             )}
-                            <span className="font-semibold text-[#e6edf3]">{ev.step}</span>
+                            <span className="font-semibold text-slate-900">{ev.step}</span>
                           </div>
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                               ev.status === 'VERIFIED'
-                                ? 'bg-white/[0.06] text-[#7ee787] border border-white/[0.10]'
-                                : 'bg-[#2b1012] text-[#f85149] border border-[#da3633]/40'
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                : 'bg-rose-50 text-rose-800 border border-rose-200'
                             }`}
                           >
                             {ev.status}
                           </span>
                         </div>
-                        <p className="text-[#768390] text-[10px] pl-5">{ev.description}</p>
-                        <p className="text-[#c5cbd3] text-[10px] pl-5 break-all">{ev.technicalDetail}</p>
+                        <p className="text-slate-500 text-xs pl-6 font-sans">{ev.description}</p>
+                        <p className="text-slate-800 text-xs pl-6 break-all font-mono">{ev.technicalDetail}</p>
                       </div>
                     ))}
                   </div>
@@ -334,42 +333,42 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
 
                 {/* Technical Cryptographic Artifacts */}
                 {report.matchedEvent && (
-                  <WorkstationSurface variant="recessed" className="p-3 space-y-2 font-mono text-xs">
-                    <div className="flex justify-between items-center text-[10px] text-[#768390] uppercase font-bold pb-1 border-b border-white/[0.04]">
+                  <WorkstationSurface variant="recessed" className="p-3.5 space-y-2.5 font-mono text-xs">
+                    <div className="flex justify-between items-center text-xs text-slate-500 uppercase font-semibold pb-1 border-b border-slate-200">
                       <span>Cryptographic Record Anchoring</span>
                       <button
                         type="button"
                         onClick={() => setShowRawSignature(!showRawSignature)}
-                        className="text-[#adbac7] hover:text-[#e6edf3] flex items-center gap-0.5 cursor-pointer"
+                        className="text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 cursor-pointer font-medium"
                       >
-                        {showRawSignature ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        {showRawSignature ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         {showRawSignature ? 'Collapse Signature' : 'Inspect Full Signature'}
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      <div className="flex justify-between p-1.5 rounded bg-[#12141a]">
-                        <span className="text-[#768390]">ALGORITHM:</span>
-                        <span className="text-[#e6edf3]">NIST FIPS 204</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-slate-500">ALGORITHM:</span>
+                        <span className="text-slate-900 font-semibold">NIST FIPS 204</span>
                       </div>
-                      <div className="flex justify-between p-1.5 rounded bg-[#12141a]">
-                        <span className="text-[#768390]">MERKLE ROOT:</span>
-                        <span className="text-[#c5cbd3] truncate max-w-[140px]">
+                      <div className="flex justify-between p-2 rounded-lg bg-white border border-slate-200">
+                        <span className="text-slate-500">MERKLE ROOT:</span>
+                        <span className="text-slate-800 truncate max-w-[140px] font-semibold">
                           {report.matchedBlock?.merkleRoot.slice(0, 16)}...
                         </span>
                       </div>
                     </div>
 
                     {showRawSignature && (
-                      <div className="p-2 rounded bg-[#0d0e12] border border-white/[0.06] text-[10px] text-[#c5cbd3] break-all leading-tight">
-                        <div className="flex justify-between text-[#768390] mb-1">
+                      <div className="p-3 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 break-all leading-relaxed">
+                        <div className="flex justify-between text-slate-500 mb-1 font-semibold">
                           <span>ML-DSA-65 SIGNATURE BASE64:</span>
                           <button
                             type="button"
                             onClick={() => handleCopy(report.matchedEvent!.recipientSignatureBase64, 'ev-sig')}
-                            className="text-[#adbac7] hover:text-[#e6edf3] flex items-center gap-1 cursor-pointer"
+                            className="text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer font-medium"
                           >
-                            {copiedKey === 'ev-sig' ? <Check className="w-3 h-3 text-[#7ee787]" /> : <Copy className="w-3 h-3" />}
+                            {copiedKey === 'ev-sig' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             {copiedKey === 'ev-sig' ? 'Copied' : 'Copy'}
                           </button>
                         </div>
@@ -379,8 +378,7 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                   </WorkstationSurface>
                 )}
 
-                {/* Bottom Operational Handoffs */}
-                <div className="pt-2 border-t border-white/[0.06] flex flex-wrap justify-between items-center gap-3">
+                <div className="pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3">
                   <OperationalButton
                     variant="secondary"
                     size="sm"
@@ -393,7 +391,7 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
-                    icon={<Download className="w-3.5 h-3.5 text-[#adbac7]" />}
+                    icon={<Download className="w-3.5 h-3.5 text-slate-600" />}
                   >
                     Download Certificate (.json)
                   </OperationalButton>
@@ -409,10 +407,10 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#768390] border border-dashed border-white/[0.08] rounded-md font-mono">
-                <Search className="w-8 h-8 mb-2 opacity-30 text-[#768390]" />
-                <p className="text-xs font-semibold text-[#e6edf3]">Awaiting Leaked Document Ingestion</p>
-                <p className="text-[11px] text-[#768390] mt-1 max-w-sm">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 border border-dashed border-slate-300 rounded-lg font-mono">
+                <Search className="w-8 h-8 mb-2 opacity-40 text-slate-400" />
+                <p className="text-xs font-semibold text-slate-800">Awaiting Leaked Document Ingestion</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm font-sans">
                   Paste a leaked document or trigger a simulated leak from the Recipient Portal, then click &apos;Execute Blind Forensic Attribution&apos;.
                 </p>
               </div>

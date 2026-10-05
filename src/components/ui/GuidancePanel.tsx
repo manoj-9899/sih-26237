@@ -25,19 +25,19 @@ export const GuidancePanel: React.FC<GuidancePanelProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(defaultExpanded);
 
   return (
-    <div className="rounded-lg border border-cyan-500/30 bg-[#0c141d]/90 p-3.5 text-xs text-[#adbac7] shadow-sm backdrop-blur-sm transition-all duration-200">
+    <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-xs text-slate-700 shadow-2xs transition-all duration-200">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[11px] font-mono font-bold text-cyan-300">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-mono font-bold text-white shadow-2xs">
             {stepNumber ? stepNumber : <Sparkles className="h-3 w-3" />}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-semibold">
-                GUIDED ENCLAVE ASSISTANT
+              <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-700 font-semibold">
+                OPERATIONAL GUIDE
               </span>
-              <span className="text-white/20">&bull;</span>
-              <h3 className="font-semibold text-[#e6edf3] text-xs font-sans tracking-tight">
+              <span className="text-slate-300">&bull;</span>
+              <h3 className="font-semibold text-slate-900 text-xs font-sans tracking-tight">
                 {title}
               </h3>
             </div>
@@ -46,47 +46,44 @@ export const GuidancePanel: React.FC<GuidancePanelProps> = ({
 
         <button
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono text-[#768390] hover:text-[#e6edf3] hover:bg-white/[0.05] transition-colors cursor-pointer"
+          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono text-slate-500 hover:text-slate-800 hover:bg-indigo-100/50 transition-colors cursor-pointer"
         >
-          <span>{isExpanded ? 'Minimize Guide' : 'Expand Guide'}</span>
+          <span>{isExpanded ? 'Minimize' : 'Expand'}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       </div>
 
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-cyan-500/15 space-y-2.5 text-[11px] leading-relaxed">
-          <p className="text-[#adbac7]">{summary}</p>
+        <div className="mt-3 pt-3 border-t border-indigo-100 space-y-2.5 text-xs leading-relaxed">
+          <p className="text-slate-600">{summary}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
             {recommendedAction && (
-              <div className="p-2.5 rounded bg-black/30 border border-cyan-500/20 space-y-1">
-                <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-semibold text-[10px] uppercase">
-                  <ArrowRight className="w-3 h-3 text-cyan-400" />
-                  Recommended Action
-                </div>
-                <div className="text-[#e6edf3]">{recommendedAction}</div>
+              <div className="bg-white p-3 rounded-lg border border-indigo-100/80 shadow-2xs">
+                <span className="font-semibold text-indigo-900 text-[10px] uppercase font-mono tracking-wider block mb-1">
+                  Target Objective
+                </span>
+                <span className="text-slate-700 text-xs leading-normal">{recommendedAction}</span>
               </div>
             )}
-
             {whatToObserve && (
-              <div className="p-2.5 rounded bg-black/30 border border-white/[0.08] space-y-1">
-                <div className="flex items-center gap-1.5 text-amber-400 font-mono font-semibold text-[10px] uppercase">
-                  <CheckCircle2 className="w-3 h-3 text-amber-400" />
-                  What to Observe
-                </div>
-                <div className="text-[#adbac7]">{whatToObserve}</div>
+              <div className="bg-white p-3 rounded-lg border border-indigo-100/80 shadow-2xs">
+                <span className="font-semibold text-emerald-800 text-[10px] uppercase font-mono tracking-wider block mb-1">
+                  Expected Telemetry
+                </span>
+                <span className="text-slate-700 text-xs leading-normal">{whatToObserve}</span>
               </div>
             )}
           </div>
 
-          {actionButtonLabel && onActionClick && (
-            <div className="pt-1 flex justify-end">
+          {onActionClick && actionButtonLabel && (
+            <div className="pt-1">
               <button
                 onClick={onActionClick}
-                className="flex items-center gap-1.5 px-3 py-1 rounded bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 text-[11px] font-mono font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-medium shadow-2xs transition-colors cursor-pointer"
               >
                 <span>{actionButtonLabel}</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}

@@ -1,10 +1,11 @@
 import React from 'react';
 
 /**
- * Reusable Defense-Grade UI Primitives for PQC Enclave Workstation
+ * Modern High-Tech Light Workstation UI Primitives
+ * Refined Swiss & Cryptographic Laboratory Aesthetic
  */
 
-// 1. SURFACES & CARDS
+// 1. SURFACES & CONTAINERS
 interface SurfaceProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'primary' | 'elevated' | 'recessed';
   children: React.ReactNode;
@@ -18,14 +19,14 @@ export const WorkstationSurface: React.FC<SurfaceProps> = ({
   ...props
 }) => {
   const variantStyles = {
-    primary: 'bg-[#12141a] border border-white/[0.08] shadow-sm',
-    elevated: 'bg-[#181b22] border border-white/[0.12] shadow-md',
-    recessed: 'bg-[#0d0e12] border border-white/[0.06] shadow-inner',
+    primary: 'bg-white border border-slate-200/90 shadow-2xs',
+    elevated: 'bg-white border border-slate-200 shadow-sm',
+    recessed: 'bg-slate-50/80 border border-slate-200/70',
   };
 
   return (
     <div
-      className={`rounded-lg p-5 ${variantStyles[variant]} ${className}`}
+      className={`rounded-xl p-5 ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -33,7 +34,7 @@ export const WorkstationSurface: React.FC<SurfaceProps> = ({
   );
 };
 
-// 2. TACTICAL BUTTON SYSTEM
+// 2. REFINED WORKSTATION BUTTONS
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'operational' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -51,27 +52,27 @@ export const OperationalButton: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const base =
-    'inline-flex items-center justify-center font-medium transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0b0d] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer';
+    'inline-flex items-center justify-center font-medium transition-all select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer';
 
   const sizes = {
     sm: 'text-xs px-2.5 py-1.5 gap-1.5 rounded-md font-mono',
-    md: 'text-xs px-4 py-2.5 gap-2 rounded-md font-medium',
-    lg: 'text-sm px-5 py-3 gap-2.5 rounded-lg font-semibold tracking-wide',
+    md: 'text-xs px-3.5 py-2 gap-2 rounded-lg font-medium',
+    lg: 'text-sm px-4 py-2.5 gap-2.5 rounded-lg font-semibold tracking-wide',
   };
 
   const variants = {
-    // Single Primary Operational Accent (Tactical Slate Steel / restrained phosphor)
+    // Primary Indigo Action
     operational:
-      'bg-[#1f242d] hover:bg-[#282f3a] text-[#e6edf3] border border-white/[0.18] shadow-sm hover:border-white/[0.30] focus-visible:ring-white/40',
-    // Secondary Workstation Trigger
+      'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow active:scale-[0.99] border border-indigo-700/20',
+    // Secondary Clean White Trigger with subtle border
     secondary:
-      'bg-[#14161b] hover:bg-[#1a1d24] text-[#adbac7] hover:text-[#e6edf3] border border-white/[0.08] hover:border-white/[0.16] focus-visible:ring-white/20',
-    // Clinical Danger Trigger (strictly reserved for breach/tamper/destructive simulation)
+      'bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-2xs hover:border-slate-300',
+    // Clinical Danger Trigger (tampering / breach)
     danger:
-      'bg-[#2d1215] hover:bg-[#3d181c] text-[#fca5a5] border border-red-500/30 hover:border-red-500/50 focus-visible:ring-red-500/40',
-    // Ghost Link
+      'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 hover:border-rose-300',
+    // Minimalist Ghost
     ghost:
-      'bg-transparent hover:bg-white/[0.05] text-[#adbac7] hover:text-[#e6edf3] border border-transparent',
+      'bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent',
   };
 
   return (
@@ -86,7 +87,7 @@ export const OperationalButton: React.FC<ButtonProps> = ({
   );
 };
 
-// 3. SEMANTIC STATUS BADGES
+// 3. CLEAN METADATA CHIPS (NO GARISH PILLS)
 interface StatusBadgeProps {
   status?: 'nominal' | 'active' | 'inspection' | 'breach' | 'neutral';
   children: React.ReactNode;
@@ -100,17 +101,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   icon,
   className = '',
 }) => {
-  const styles = {
-    nominal: 'bg-[#161b22] text-[#adbac7] border border-white/[0.12]',
-    active: 'bg-[#18212e] text-[#7ee787] border border-[#238636]/40',
-    inspection: 'bg-[#261c10] text-[#f0883e] border border-[#f0883e]/30',
-    breach: 'bg-[#2b1012] text-[#f85149] border border-[#da3633]/40',
-    neutral: 'bg-[#161b22] text-[#768390] border border-white/[0.08]',
+  const statusStyles = {
+    nominal: 'text-emerald-700 bg-emerald-50/80 border-emerald-200/80',
+    active: 'text-indigo-700 bg-indigo-50/80 border-indigo-200/80',
+    inspection: 'text-sky-700 bg-sky-50/80 border-sky-200/80',
+    breach: 'text-rose-700 bg-rose-50/80 border-rose-200/80',
+    neutral: 'text-slate-600 bg-slate-100/90 border-slate-200/80',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono tracking-tight uppercase ${styles[status]} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono border font-medium ${statusStyles[status]} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       <span>{children}</span>
@@ -118,76 +119,84 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   );
 };
 
-// 4. CRYPTOGRAPHIC DATA CONTAINER (Archival Platinum Ink)
-interface CryptoBlockProps {
+// 4. TABULAR DATA & CRYPTO BLOCKS
+interface CryptoDataBlockProps {
   label: string;
   value: string;
-  badge?: string;
-  onCopy?: () => void;
-  className?: string;
+  subtext?: string;
+  action?: React.ReactNode;
+  truncate?: boolean;
 }
 
-export const CryptoDataBlock: React.FC<CryptoBlockProps> = ({
+export const CryptoDataBlock: React.FC<CryptoDataBlockProps> = ({
   label,
   value,
-  badge,
-  className = '',
+  subtext,
+  action,
+  truncate = false,
 }) => {
   return (
-    <div
-      className={`p-3 rounded-md bg-[#0d0e12] border border-white/[0.06] font-mono text-xs ${className}`}
-    >
-      <div className="flex items-center justify-between text-[11px] text-[#768390] uppercase mb-1.5 pb-1 border-b border-white/[0.04]">
-        <span className="font-semibold tracking-wider">{label}</span>
-        {badge && (
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/[0.05] text-[#adbac7] border border-white/[0.08]">
-            {badge}
-          </span>
-        )}
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-mono text-xs">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+          {label}
+        </span>
+        {action && <div>{action}</div>}
       </div>
-      <div className="break-all text-[#c5cbd3] leading-relaxed text-[11px]">
+      <div
+        className={`text-slate-800 break-all select-all font-mono ${
+          truncate ? 'truncate' : ''
+        }`}
+      >
         {value}
       </div>
+      {subtext && (
+        <div className="text-[10px] text-slate-400 mt-1 font-sans font-normal">
+          {subtext}
+        </div>
+      )}
     </div>
   );
 };
 
-// 5. TECHNICAL METRIC TILE
+// 5. HIGH-DENSITY METRIC TILES
 interface MetricTileProps {
   label: string;
   value: string | number;
-  subtext?: string;
-  status?: 'nominal' | 'inspection' | 'breach';
-  className?: string;
+  subValue?: string;
+  status?: 'nominal' | 'active' | 'neutral' | 'breach';
+  icon?: React.ReactNode;
 }
 
 export const TechnicalMetricTile: React.FC<MetricTileProps> = ({
   label,
   value,
-  subtext,
-  status = 'nominal',
-  className = '',
+  subValue,
+  status = 'neutral',
+  icon,
 }) => {
-  const valueColor = {
-    nominal: 'text-[#e6edf3]',
-    inspection: 'text-[#f0883e]',
-    breach: 'text-[#f85149]',
-  }[status];
+  const statusDecorators = {
+    nominal: 'text-emerald-600',
+    active: 'text-indigo-600',
+    neutral: 'text-slate-700',
+    breach: 'text-rose-600',
+  };
 
   return (
-    <div
-      className={`p-3 rounded-md bg-[#12141a] border border-white/[0.08] ${className}`}
-    >
-      <span className="block text-[11px] font-mono uppercase text-[#768390] tracking-wider mb-1">
-        {label}
-      </span>
-      <span className={`block text-lg font-bold font-mono tracking-tight ${valueColor}`}>
-        {value}
-      </span>
-      {subtext && (
-        <span className="block text-[10px] font-mono text-[#57606a] mt-0.5 truncate">
-          {subtext}
+    <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-all">
+      <div className="flex items-center justify-between text-slate-400 text-xs mb-2">
+        <span className="font-medium text-slate-500 uppercase tracking-wider text-[11px]">
+          {label}
         </span>
+        {icon && <span className="text-slate-400">{icon}</span>}
+      </div>
+      <div className={`text-2xl font-bold font-mono tracking-tight ${statusDecorators[status]}`}>
+        {value}
+      </div>
+      {subValue && (
+        <div className="text-[11px] text-slate-500 mt-1 font-mono truncate">
+          {subValue}
+        </div>
       )}
     </div>
   );

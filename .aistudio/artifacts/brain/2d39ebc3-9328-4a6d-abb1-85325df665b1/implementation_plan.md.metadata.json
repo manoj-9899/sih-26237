@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for Dual-Mode UI Architecture: adding a top navigation toggle switch between 'Workstation Mode' (ultra-clean, data-dense, status-first security terminal) and 'Guided Mode' (inline collapsible guidance panels, step hints, plain-English explanations, and interactive walkthrough assistance).",
-  "updatedAt":  "2026-09-28T20:37:19.741271408Z",
+  "summary":  "Detailed Plain-English Language Simplification Plan for the Guided Tour, comparing current wording against simplified everyday wording with rationales for all tour steps, modals, companion cards, and interactive prompts.",
+  "updatedAt":  "2026-09-30T17:36:28.125492792Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

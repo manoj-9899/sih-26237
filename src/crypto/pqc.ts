@@ -296,9 +296,12 @@ export function verifyMlDsa65(
   dsaPublicKey: Uint8Array
 ): boolean {
   try {
+    // ML-DSA-65 public key is strictly 1952 bytes; signature is 3309 bytes
+    if (!dsaPublicKey || dsaPublicKey.length !== 1952 || !signature || signature.length !== 3309) {
+      return false;
+    }
     return ml_dsa65.verify(signature, messageBytes, dsaPublicKey);
-  } catch (err) {
-    console.error('ML-DSA verification failed:', err);
+  } catch (_err) {
     return false;
   }
 }

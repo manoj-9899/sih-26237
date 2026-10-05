@@ -53,7 +53,7 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 }) => {
   const [selectedDocId, setSelectedDocId] = useState<string>(documents[0]?.id || '');
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
-    recipients.slice(0, 3).map((r) => r.id) // Default Alice, Bob, Charlie
+    recipients.slice(0, 3).map((r) => r.id)
   );
   const [isPackaging, setIsPackaging] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -113,7 +113,6 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
     }
     setSelectedDocId(newDoc.id);
     setShowAddModal(false);
-    // Reset form
     setCustomTitle('');
     setCustomText('');
     setCustomSummary('');
@@ -170,7 +169,6 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Guided Mode Instruction Panel */}
       {uiMode === 'guided' && (
         <GuidancePanel
           stepNumber="1"
@@ -184,19 +182,19 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
       )}
 
       {/* 1. SENDER OPERATIONS CONTEXT HEADER */}
-      <WorkstationSurface variant="primary" className="p-3.5 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <WorkstationSurface variant="primary" className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status="neutral" icon={<Lock className="w-3 h-3 text-[#adbac7]" />}>
+            <StatusBadge status="neutral" icon={<Lock className="w-3.5 h-3.5 text-slate-700" />}>
               SENDER CONSOLE
             </StatusBadge>
-            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-[11px] font-mono text-slate-600 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
               AES-256-GCM
             </span>
-            <span className="text-[11px] font-mono text-[#768390] px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-[11px] font-mono text-slate-600 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
               ML-KEM-768
             </span>
-            <span className="text-[11px] font-mono text-[#7ee787] px-2 py-0.5 rounded bg-[#7ee787]/10 border border-[#7ee787]/20">
+            <span className="text-[11px] font-mono text-emerald-700 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
               AIR-GAPPED
             </span>
           </div>
@@ -206,7 +204,7 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
               variant="secondary"
               size="sm"
               onClick={() => setShowAddModal(true)}
-              icon={<Upload className="w-3 h-3" />}
+              icon={<Upload className="w-3.5 h-3.5 text-slate-600" />}
             >
               Ingest Document
             </OperationalButton>
@@ -216,7 +214,8 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
               size="sm"
               onClick={handleCreatePackage}
               disabled={isPackaging || selectedRecipientIds.length === 0}
-              icon={<Lock className="w-3 h-3" />}
+              icon={<Lock className="w-3.5 h-3.5" />}
+              data-tour-target="generate-package-btn"
             >
               {isPackaging ? 'PACKAGING...' : 'GENERATE ENCRYPTED PACKAGE'}
             </OperationalButton>
@@ -224,26 +223,25 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
         </div>
       </WorkstationSurface>
 
-      {/* 2. MAIN WORKSTATION WORKFLOW: DOCUMENT DOSSIER & RECIPIENT REGISTER */}
+      {/* 2. MAIN WORKSTATION WORKFLOW */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Document Dossier & Recipient Authorization Register (col-span-7) */}
+        {/* Left Column: Document Dossier & Recipient Authorization Register */}
         <div className="lg:col-span-7 space-y-6">
           {/* Section A: Controlled Document Dossier */}
           <WorkstationSurface variant="primary">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#adbac7]" />
-                <span className="text-sm font-semibold text-[#e6edf3]">
+                <FileText className="w-4 h-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-900">
                   1. Classified Document Dossier
                 </span>
               </div>
-              <span className="text-xs font-mono text-[#768390]">
+              <span className="text-xs font-mono text-slate-500">
                 {documents.length} Dossiers Registered
               </span>
             </div>
 
-            {/* Document Selection List */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {documents.map((doc) => {
                 const isSelected = doc.id === selectedDocId;
                 const isTopSecret = doc.classification.includes('TOP SECRET');
@@ -252,36 +250,36 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                   <div
                     key={doc.id}
                     onClick={() => setSelectedDocId(doc.id)}
-                    className={`p-3.5 rounded-md border cursor-pointer transition-colors ${
+                    className={`p-3.5 rounded-lg border cursor-pointer transition-all select-none ${
                       isSelected
-                        ? 'border-white/[0.24] bg-[#181b22] text-[#e6edf3]'
-                        : 'border-white/[0.06] bg-[#0d0e12]/60 hover:bg-[#12141a] text-[#adbac7]'
+                        ? 'border-indigo-400 bg-indigo-50/40 text-slate-900 shadow-2xs ring-1 ring-indigo-200'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 min-w-0">
+                      <div className="space-y-1.5 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-tight ${
                               isTopSecret
-                                ? 'bg-[#2b1012] text-[#f85149] border border-[#da3633]/40'
-                                : 'bg-[#261c10] text-[#f0883e] border border-[#f0883e]/30'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}
                           >
                             {doc.classification}
                           </span>
-                          <span className="text-xs font-mono text-[#768390]">{doc.id}</span>
-                          <h4 className="text-xs font-bold text-[#e6edf3] truncate">{doc.title}</h4>
+                          <span className="text-xs font-mono text-slate-400">{doc.id}</span>
+                          <h4 className="text-xs font-bold text-slate-900 truncate">{doc.title}</h4>
                         </div>
-                        <p className="text-xs text-[#768390] line-clamp-1">{doc.summary}</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">{doc.summary}</p>
                       </div>
 
                       <div className="shrink-0 flex items-center pt-0.5">
                         <div
                           className={`w-4 h-4 rounded flex items-center justify-center text-[10px] border ${
                             isSelected
-                              ? 'bg-[#e6edf3] border-[#e6edf3] text-[#0a0b0d] font-bold'
-                              : 'border-white/[0.20] bg-transparent'
+                              ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
+                              : 'border-slate-300 bg-transparent'
                           }`}
                         >
                           {isSelected && '✓'}
@@ -293,30 +291,29 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
               })}
             </div>
 
-            {/* Selected Document Metadata Dossier & Plaintext Inspection */}
             {currentDoc && (
-              <div className="mt-4 pt-3 border-t border-white/[0.06] space-y-3">
+              <div className="mt-4 pt-3.5 border-t border-slate-200 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
-                  <div className="p-2.5 rounded bg-[#0d0e12] border border-white/[0.06]">
-                    <span className="text-[10px] text-[#768390] block uppercase">Security Tier</span>
-                    <span className="text-[#e6edf3] font-semibold">{currentDoc.classification}</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] text-slate-400 block uppercase font-medium">Security Tier</span>
+                    <span className="text-slate-900 font-semibold">{currentDoc.classification}</span>
                   </div>
-                  <div className="p-2.5 rounded bg-[#0d0e12] border border-white/[0.06]">
-                    <span className="text-[10px] text-[#768390] block uppercase">Originating Office</span>
-                    <span className="text-[#c5cbd3] truncate block">{currentDoc.originatingOffice}</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] text-slate-400 block uppercase font-medium">Originating Office</span>
+                    <span className="text-slate-700 truncate block">{currentDoc.originatingOffice}</span>
                   </div>
-                  <div className="p-2.5 rounded bg-[#0d0e12] border border-white/[0.06]">
-                    <span className="text-[10px] text-[#768390] block uppercase">Handling Caveats</span>
-                    <span className="text-[#adbac7] text-[11px] truncate block">{currentDoc.caveats}</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] text-slate-400 block uppercase font-medium">Handling Caveats</span>
+                    <span className="text-slate-700 text-xs truncate block">{currentDoc.caveats}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-md bg-[#0d0e12] border border-white/[0.06] font-mono text-xs text-[#768390]">
-                  <div className="text-[10px] uppercase text-[#adbac7] mb-1 font-semibold flex items-center justify-between pb-1 border-b border-white/[0.04]">
-                    <span>PLAINTEXT PAYLOAD DOSSIER &bull; RAW CONTENT PREVIEW</span>
-                    <span>{currentDoc.rawText.length} BYTES</span>
+                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-600">
+                  <div className="text-[10px] uppercase text-slate-500 mb-1.5 font-semibold flex items-center justify-between pb-1 border-b border-slate-200">
+                    <span>PLAINTEXT PAYLOAD DOSSIER &bull; RAW PREVIEW</span>
+                    <span className="text-slate-400">{currentDoc.rawText.length} BYTES</span>
                   </div>
-                  <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-[#c5cbd3] max-h-28 overflow-y-auto pr-1">
+                  <pre className="whitespace-pre-wrap text-xs leading-relaxed text-slate-800 max-h-32 overflow-y-auto pr-1">
                     {currentDoc.rawText.slice(0, 360)}...
                   </pre>
                 </div>
@@ -326,10 +323,10 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
           {/* Section B: Recipient Authorization Register */}
           <WorkstationSurface variant="primary">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#adbac7]" />
-                <span className="text-sm font-semibold text-[#e6edf3]">
+                <Users className="w-4 h-4 text-slate-600" />
+                <span className="text-sm font-semibold text-slate-900">
                   2. Recipient Authorization Register
                 </span>
               </div>
@@ -337,17 +334,17 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                 <button
                   type="button"
                   onClick={handleSelectAllRecipients}
-                  className="text-xs font-mono text-[#adbac7] hover:text-[#e6edf3] underline cursor-pointer"
+                  className="text-xs font-mono text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
                 >
                   {selectedRecipientIds.length === recipients.length ? 'Deselect All' : 'Select All'}
                 </button>
-                <span className="text-xs font-mono text-[#e6edf3] px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.08]">
+                <span className="text-xs font-mono text-slate-700 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
                   {selectedRecipientIds.length} of {recipients.length} Authorized
                 </span>
               </div>
             </div>
 
-            <p className="text-xs text-[#768390] mb-3 leading-relaxed">
+            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
               Select verified defense personnel. Each selected recipient receives a cryptographically isolated
               ML-KEM-768 key encapsulation envelope enabling single-party decapsulation.
             </p>
@@ -359,17 +356,17 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                   <div
                     key={recip.id}
                     onClick={() => toggleRecipient(recip.id)}
-                    className={`p-3 rounded-md border cursor-pointer transition-colors flex items-start gap-3 select-none ${
+                    className={`p-3 rounded-lg border cursor-pointer transition-all flex items-start gap-3 select-none ${
                       isChecked
-                        ? 'border-white/[0.24] bg-[#181b22] text-[#e6edf3]'
-                        : 'border-white/[0.06] bg-[#0d0e12]/60 text-[#adbac7] hover:bg-[#12141a]'
+                        ? 'border-indigo-400 bg-indigo-50/40 text-slate-900 shadow-2xs ring-1 ring-indigo-200'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded flex items-center justify-center font-bold text-xs shrink-0 font-mono ${
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono ${
                         isChecked
-                          ? 'bg-[#e6edf3] text-[#0a0b0d]'
-                          : 'bg-white/[0.08] text-[#768390]'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-500'
                       }`}
                     >
                       {recip.avatarInitials}
@@ -377,18 +374,18 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-semibold text-[#e6edf3] truncate">{recip.name}</h5>
+                        <h5 className="text-xs font-semibold text-slate-900 truncate">{recip.name}</h5>
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {}}
-                          className="rounded border-white/[0.20] bg-transparent text-[#e6edf3] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                       </div>
-                      <p className="text-[11px] text-[#768390] truncate">{recip.role}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{recip.role}</p>
 
-                      <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-[#768390]">
-                        <span className="text-[#adbac7]">KEM-768</span>
+                      <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-slate-400">
+                        <span className="text-slate-700 font-medium">KEM-768</span>
                         <span>&bull;</span>
                         <span className="truncate">FP: {recip.keys.keyFingerprint.slice(0, 10)}...</span>
                       </div>
@@ -398,8 +395,7 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
               })}
             </div>
 
-            {/* Packaging Trigger Action Bar */}
-            <div className="mt-5 pt-3 border-t border-white/[0.06]">
+            <div className="mt-5 pt-3.5 border-t border-slate-200">
               <OperationalButton
                 variant="operational"
                 size="lg"
@@ -416,30 +412,28 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
           </WorkstationSurface>
         </div>
 
-        {/* Right Column: Cryptographic Container Inspector & Technical Payload (col-span-5) */}
+        {/* Right Column: Cryptographic Container Inspector */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Metric Telemetry Overview */}
           <div className="grid grid-cols-2 gap-3">
             <TechnicalMetricTile
               label="Selected Document"
               value={currentDoc ? currentDoc.id.replace('DOC-', '') : 'NONE'}
-              subtext={currentDoc ? currentDoc.classification : 'No doc'}
+              subValue={currentDoc ? currentDoc.classification : 'No doc'}
               status="nominal"
             />
             <TechnicalMetricTile
               label="Authorized Clearances"
               value={`${selectedRecipientIds.length} Recipient${selectedRecipientIds.length === 1 ? '' : 's'}`}
-              subtext="Isolated ML-KEM Envelopes"
+              subValue="Isolated ML-KEM Envelopes"
               status="nominal"
             />
           </div>
 
-          {/* Cryptographic Package Inspector Panel */}
           <WorkstationSurface variant="elevated" className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <FileCode className="w-4 h-4 text-[#adbac7]" />
-                <span className="text-xs font-mono font-bold text-[#e6edf3] uppercase tracking-wider">
+                <FileCode className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-mono font-bold text-slate-800 uppercase tracking-wider">
                   Cryptographic Container Inspector
                 </span>
               </div>
@@ -447,9 +441,9 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                 <button
                   type="button"
                   onClick={copyPackageJson}
-                  className="flex items-center gap-1 text-[11px] font-mono text-[#adbac7] hover:text-[#e6edf3] transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] font-mono text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-[#7ee787]" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copied' : 'Copy JSON'}</span>
                 </button>
               )}
@@ -457,23 +451,19 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
             {activePackage ? (
               <div className="space-y-4">
-                {/* Structural Package Metadata */}
                 <div className="space-y-2">
                   <CryptoDataBlock
                     label="Distribution Package Identifier"
                     value={activePackage.packageId}
-                    badge="SIHPKG"
                   />
                   <CryptoDataBlock
                     label="Source Document SHA-256 Digest"
                     value={activePackage.originalDocumentHashSha256}
-                    badge="HASH"
                   />
                 </div>
 
-                {/* Recipient Key Envelopes Register */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-[#768390] uppercase">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 uppercase">
                     <span className="font-semibold tracking-wider">
                       Recipient Key Envelopes ({activePackage.envelopes.length})
                     </span>
@@ -484,17 +474,17 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                     {activePackage.envelopes.map((env, idx) => (
                       <div
                         key={env.recipientId}
-                        className="p-2.5 rounded bg-[#0d0e12] border border-white/[0.06] text-xs font-mono space-y-1"
+                        className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono space-y-1"
                       >
-                        <div className="flex items-center justify-between text-[#e6edf3]">
+                        <div className="flex items-center justify-between text-slate-800">
                           <span className="font-semibold text-xs">
                             #{idx + 1} {env.recipientName}
                           </span>
-                          <span className="text-[10px] text-[#adbac7] px-1.5 py-0.2 rounded bg-white/[0.05] border border-white/[0.08]">
+                          <span className="text-[10px] text-slate-600 px-1.5 py-0.5 rounded bg-white border border-slate-200 font-medium">
                             {env.kemAlgorithm}
                           </span>
                         </div>
-                        <div className="text-[10px] text-[#768390] truncate">
+                        <div className="text-[10px] text-slate-500 truncate">
                           Wrapped CEK: {env.wrappedCekBase64.slice(0, 28)}...
                         </div>
                       </div>
@@ -502,34 +492,32 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                   </div>
                 </div>
 
-                {/* Symmetric Ciphertext Envelope Readouts */}
-                <div className="p-3 rounded-md bg-[#0d0e12] border border-white/[0.06] text-xs font-mono text-[#768390] space-y-1.5">
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 space-y-1.5">
                   <div className="flex justify-between items-center">
                     <span>Symmetric Cipher:</span>
-                    <span className="text-[#e6edf3] font-semibold">AES-256-GCM</span>
+                    <span className="text-slate-900 font-semibold">AES-256-GCM</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>GCM IV:</span>
-                    <span className="text-[#c5cbd3]">{activePackage.ivHex}</span>
+                    <span className="text-slate-700">{activePackage.ivHex}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>GCM Auth Tag:</span>
-                    <span className="text-[#c5cbd3]">{activePackage.tagHex}</span>
+                    <span className="text-slate-700">{activePackage.tagHex}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span>Ciphertext Payload:</span>
-                    <span className="text-[#7ee787] font-semibold">
+                    <span className="text-emerald-700 font-semibold">
                       {Math.round(activePackage.ciphertextBase64.length * 0.75)} bytes
                     </span>
                   </div>
                 </div>
 
-                {/* Technical Payload Toggle (Secondary Progressive Disclosure) */}
                 <div className="pt-1">
                   <button
                     type="button"
                     onClick={() => setShowRawPayload(!showRawPayload)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded bg-[#0d0e12] border border-white/[0.06] text-xs font-mono text-[#adbac7] hover:text-[#e6edf3] transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
                       <Terminal className="w-3.5 h-3.5" />
@@ -539,16 +527,15 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                   </button>
 
                   {showRawPayload && (
-                    <div className="mt-2 p-3 rounded bg-[#0a0b0d] border border-white/[0.08] font-mono text-[10px] text-[#768390] max-h-40 overflow-y-auto leading-relaxed">
-                      <pre className="whitespace-pre-wrap break-all text-[#c5cbd3]">
+                    <div className="mt-2 p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[10px] text-slate-300 max-h-40 overflow-y-auto leading-relaxed">
+                      <pre className="whitespace-pre-wrap break-all text-slate-200">
                         {JSON.stringify(activePackage, null, 2)}
                       </pre>
                     </div>
                   )}
                 </div>
 
-                {/* Operational Export & Workflow Transfer Handoff */}
-                <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                <div className="pt-3 border-t border-slate-200 space-y-2">
                   <OperationalButton
                     variant="secondary"
                     size="md"
@@ -564,17 +551,17 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                     size="md"
                     onClick={onNavigateToRecipient}
                     className="w-full"
-                    icon={<ArrowRight className="w-4 h-4" />}
+                    icon={<ArrowRight className="w-3.5 h-3.5" />}
                   >
                     Handoff to Recipient Decryption Portal
                   </OperationalButton>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 text-center text-[#768390] border border-dashed border-white/[0.08] rounded-md">
-                <Code2 className="w-8 h-8 mb-2 text-[#adbac7] opacity-40" />
-                <p className="text-xs font-mono font-semibold text-[#e6edf3]">Awaiting Package Assembly</p>
-                <p className="text-[11px] font-mono text-[#768390] mt-1 max-w-xs leading-relaxed">
+              <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                <Code2 className="w-8 h-8 mb-2 text-slate-400 opacity-60" />
+                <p className="text-xs font-mono font-semibold text-slate-800">Awaiting Package Assembly</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">
                   Select a classified document and at least one authorized recipient, then execute the broadcast packaging
                   operation to generate the NIST PQC distribution container.
                 </p>
@@ -586,26 +573,25 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
       {/* 3. CONTROLLED DOCUMENT INGESTION MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <WorkstationSurface variant="elevated" className="w-full max-w-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <WorkstationSurface variant="elevated" className="w-full max-w-2xl p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <FileUp className="w-5 h-5 text-[#adbac7]" />
-                <h3 className="text-sm font-bold text-[#e6edf3] font-mono uppercase tracking-wide">
+                <FileUp className="w-5 h-5 text-slate-700" />
+                <h3 className="text-sm font-bold text-slate-900 font-mono uppercase tracking-wide">
                   Ingest Classified Document Payload
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="p-1 rounded hover:bg-white/[0.05] text-[#768390] hover:text-[#e6edf3] transition-colors cursor-pointer"
+                className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Ingestion Surface */}
-            <div className="p-4 rounded-md border border-dashed border-white/[0.12] bg-[#0d0e12] text-center hover:bg-[#12141a] transition-colors">
+            <div className="p-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center hover:bg-slate-100/60 transition-colors">
               <input
                 type="file"
                 id="doc-file-input"
@@ -617,11 +603,11 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                 htmlFor="doc-file-input"
                 className="cursor-pointer flex flex-col items-center justify-center gap-2"
               >
-                <Upload className="w-6 h-6 text-[#adbac7]" />
-                <span className="text-xs font-semibold text-[#e6edf3]">
+                <Upload className="w-6 h-6 text-indigo-600" />
+                <span className="text-xs font-semibold text-slate-900">
                   Select Local File (.txt or .md)
                 </span>
-                <span className="text-[11px] font-mono text-[#768390]">
+                <span className="text-xs text-slate-500">
                   Plaintext or Markdown specifications supported for post-quantum packaging
                 </span>
               </label>
@@ -629,26 +615,26 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-mono text-[#adbac7] mb-1">
-                  Document Title <span className="text-[#f85149]">*</span>
+                <label className="block text-xs font-mono text-slate-600 mb-1 font-medium">
+                  Document Title <span className="text-rose-600">*</span>
                 </label>
                 <input
                   type="text"
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
                   placeholder="e.g. Project Nebula Security Assessment"
-                  className="w-full px-3 py-2 rounded-md bg-[#0d0e12] border border-white/[0.08] text-[#e6edf3] text-xs font-mono focus:border-white/[0.24] outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-[#adbac7] mb-1">
+                <label className="block text-xs font-mono text-slate-600 mb-1 font-medium">
                   Security Classification
                 </label>
                 <select
                   value={customClassification}
                   onChange={(e) => setCustomClassification(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-md bg-[#0d0e12] border border-white/[0.08] text-[#e6edf3] text-xs font-mono focus:border-white/[0.24] outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                 >
                   <option value="SECRET">SECRET</option>
                   <option value="CONFIDENTIAL">CONFIDENTIAL</option>
@@ -658,7 +644,7 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-[#adbac7] mb-1">
+              <label className="block text-xs font-mono text-slate-600 mb-1 font-medium">
                 Executive Summary
               </label>
               <input
@@ -666,16 +652,16 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                 value={customSummary}
                 onChange={(e) => setCustomSummary(e.target.value)}
                 placeholder="Short summary of the defense artifact payload"
-                className="w-full px-3 py-2 rounded-md bg-[#0d0e12] border border-white/[0.08] text-[#e6edf3] text-xs font-mono focus:border-white/[0.24] outline-none"
+                className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-mono text-[#adbac7]">
-                  Plaintext Body <span className="text-[#f85149]">*</span>
+                <label className="text-xs font-mono text-slate-600 font-medium">
+                  Plaintext Body <span className="text-rose-600">*</span>
                 </label>
-                <span className="text-[11px] font-mono text-[#768390]">
+                <span className="text-xs font-mono text-slate-400">
                   {customText.length} characters ({customText.split(/\s+/).filter(Boolean).length} words)
                 </span>
               </div>
@@ -684,11 +670,11 @@ export const SenderStudio: React.FC<SenderStudioProps> = ({
                 onChange={(e) => setCustomText(e.target.value)}
                 rows={6}
                 placeholder="Type or paste classified document content..."
-                className="w-full p-3 rounded-md bg-[#0d0e12] border border-white/[0.08] text-[#e6edf3] text-xs font-mono focus:border-white/[0.24] outline-none leading-relaxed"
+                className="w-full p-3 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none leading-relaxed"
               ></textarea>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.06]">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
               <OperationalButton
                 variant="secondary"
                 size="md"

@@ -2,60 +2,93 @@
 
 @layer base {
   :root {
-    /* Base Surfaces (Obsidian/Graphite Spectrum - Zero blue tint) */
-    --surface-root: #0a0b0d;
-    --surface-primary: #12141a;
-    --surface-elevated: #181b22;
-    --surface-recessed: #0d0e12;
+    /* Refined Frosted Light Surfaces (Swiss/Laboratory Clean Slate & White) */
+    --surface-root: #f8fafc;
+    --surface-primary: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-recessed: #f1f5f9;
+    --surface-sidebar: #f8fafc;
 
-    /* Structural Architectural Borders */
-    --border-subtle: rgba(255, 255, 255, 0.07);
-    --border-medium: rgba(255, 255, 255, 0.12);
-    --border-prominent: rgba(255, 255, 255, 0.20);
+    /* Architectural Micro-Borders */
+    --border-subtle: #e2e8f0;
+    --border-medium: #cbd5e1;
+    --border-prominent: #94a3b8;
 
-    /* Single Primary Operational Accent (Tactical Steel Phosphor / Muted Platinum Sage) */
-    --accent-op: #38bdf8;
-    --accent-op-hover: #0284c7;
-    --accent-op-subtle: rgba(56, 189, 248, 0.08);
-    --accent-op-border: rgba(56, 189, 248, 0.25);
+    /* Primary Cryptographic Indigo */
+    --accent-op: #4f46e5;
+    --accent-op-hover: #4338ca;
+    --accent-op-subtle: rgba(79, 70, 229, 0.06);
+    --accent-op-border: rgba(79, 70, 229, 0.20);
 
-    /* Single Clinical Diagnostic / Breach Channel */
+    /* Diagnostic & Security Red / Emerald */
     --breach-crimson: #dc2626;
-    --breach-crimson-subtle: rgba(220, 38, 38, 0.09);
-    --breach-crimson-border: rgba(220, 38, 38, 0.35);
+    --breach-crimson-subtle: rgba(220, 38, 38, 0.08);
+    --breach-crimson-border: rgba(220, 38, 38, 0.25);
 
-    /* Steganographic Inspection Channel (Muted Ochre) */
-    --inspection-ochre: #d97706;
-    --inspection-ochre-subtle: rgba(217, 119, 6, 0.10);
-    --inspection-ochre-border: rgba(217, 119, 6, 0.30);
+    --status-success: #16a34a;
+    --status-success-subtle: rgba(22, 163, 74, 0.08);
 
-    /* Archival Monospace Data Ink */
-    --ink-archival: #c5cbd3;
-    --ink-muted: #79828d;
-    --ink-faint: #484f58;
+    /* Steganographic Inspection Channel (Vibrant Cyan / Teal) */
+    --inspection-cyan: #0284c7;
+    --inspection-cyan-subtle: rgba(2, 132, 199, 0.10);
+    --inspection-cyan-border: rgba(2, 132, 199, 0.30);
+
+    /* Text Ink */
+    --ink-primary: #0f172a;
+    --ink-secondary: #334155;
+    --ink-muted: #64748b;
+    --ink-faint: #94a3b8;
   }
 
   body {
     background-color: var(--surface-root);
-    color: #e6edf3;
+    color: var(--ink-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Monospace typography standard for cryptographic data */
+  code, pre, .font-mono {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-feature-settings: "zero", "tnum";
+  }
 }
 
-/* Custom Scrollbar for Recessed Data Terminal */
+/* Custom Scrollbar for Crisp Light Workstation */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #0d0e12;
+  background: #f1f5f9;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #24292f;
+  background: #cbd5e1;
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #323842;
+  background: #94a3b8;
+}
+
+/* Beginner Tour Spotlight Animation */
+@keyframes tour-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4), 0 0 15px rgba(79, 70, 229, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.6), 0 0 25px rgba(79, 70, 229, 0.5);
+    transform: scale(1.02);
+  }
+}
+
+.tour-spotlight-active {
+  animation: tour-pulse-glow 1.8s infinite ease-in-out !important;
+  position: relative;
+  z-index: 40 !important;
 }
