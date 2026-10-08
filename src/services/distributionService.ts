@@ -472,6 +472,55 @@ export class DistributionService {
 
     const { event, block } = match;
 
+    // Step 2.5: Verify the extracted watermark's asymmetric authenticator.
+    // A CRC can detect accidental corruption but cannot authenticate a watermark.
+    const watermarkRecipient = airGappedLedger.getRecipient(event.recipientId);
+    const watermarkAuthMessage = canonicalizeJson({
+      version: 2,
+      sessionId: extractedPayload.sessionId,
+      watermarkId: extractedPayload.watermarkId,
+      recipientId: event.recipientId,
+      recipientFingerprint: event.recipientPubkeyFingerprint,
+      timestampEpochMs: event.timestampEpochMs,
+      documentHashSha256: event.documentHashSha256,
+      watermarkCommitment: event.watermarkCommitment,
+    });
+    const extractedSignature = extractedPayload.watermarkSignatureBase64;
+    const signatureMatchesLedger = !!extractedSignature && extractedSignature === event.watermarkSignatureBase64;
+    const watermarkSignatureValid = !!watermarkRecipient && signatureMatchesLedger && verifyMlDsa65(
+      base64ToBytes(extractedSignature!),
+      new TextEncoder().encode(watermarkAuthMessage),
+      hexToBytes(watermarkRecipient.keys.dsaPublicKeyHex)
+    );
+    if (!watermarkSignatureValid) {
+      evidenceChain.push({
+        step: 'Watermark Cryptographic Authentication',
+        description: 'Verifying extracted watermark against recipient ML-DSA-65 authenticator',
+        status: 'FAILED',
+        technicalDetail: 'The extracted watermark has no valid cryptographic authenticator matching the committed provenance event. CRC alone is insufficient for attribution.',
+      });
+      return {
+        reportId,
+        analyzedAt: Date.now(),
+        watermarkExtracted: true,
+        watermarkPayload: extractedPayload,
+        matchedEvent: event,
+        matchedBlock: block,
+        merkleProofValid: false,
+        pqcSignatureValid: false,
+        ledgerIntegrityValid: false,
+        attributionVerdict: 'EVIDENCE_MISMATCH',
+        confidenceScore: 0,
+        evidenceChain,
+      };
+    }
+    evidenceChain.push({
+      step: 'Watermark Cryptographic Authentication',
+      description: 'Verified ML-DSA-65 authenticator over watermark context and document hash',
+      status: 'VERIFIED',
+      technicalDetail: 'Authenticated watermark matches the signed ledger event and recipient public key.',
+    });
+
     // Step 3: Watermark Commitment & Document Integrity Validation
     const expectedCommitment = await computeWatermarkCommitment(
       extractedPayload.sessionId,
