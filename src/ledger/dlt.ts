@@ -122,16 +122,19 @@ export async function createGenesisBlock(): Promise<LedgerBlock> {
       validatorId: INITIAL_VALIDATORS[0].id,
       validatorName: INITIAL_VALIDATORS[0].name,
       signatureHex: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
     {
       validatorId: INITIAL_VALIDATORS[1].id,
       validatorName: INITIAL_VALIDATORS[1].name,
       signatureHex: 'b2c3d4e5f6a17890123456789abcdef0123456789abcdef0123456789abcdef1',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
     {
       validatorId: INITIAL_VALIDATORS[2].id,
       validatorName: INITIAL_VALIDATORS[2].name,
       signatureHex: 'c3d4e5f6a1b27890123456789abcdef0123456789abcdef0123456789abcdef2',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
   ];
 
