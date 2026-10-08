@@ -218,6 +218,7 @@ export class AirGappedLedger {
           // Legacy browser blocks used deterministic hashes as validator attestations.
           // Do not silently trust them after the hardening upgrade; start a new trusted chain.
           console.warn('[DLT] Legacy validator attestations detected; starting a hardened ledger epoch.');
+          await airGappedStorage.clearBlocks();
         }
 
         if (this.chain.length === 0) {
