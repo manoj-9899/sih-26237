@@ -273,19 +273,6 @@ export class AirGappedLedger {
     }
 
     // 1. Verify ML-DSA-65 signature on the canonical RFC 8785 event payload
-    const canonicalMessage = canonicalizeJson({
-      eventId: event.eventId,
-      documentId: event.documentId,
-      documentHashSha256: event.documentHashSha256,
-      packageHashSha256: event.packageHashSha256,
-      recipientId: event.recipientId,
-      recipientPubkeyFingerprint: event.recipientPubkeyFingerprint,
-      sessionId: event.sessionId,
-      watermarkId: event.watermarkId,
-      watermarkCommitment: event.watermarkCommitment,
-      timestampEpochMs: event.timestampEpochMs,
-    });
-
     const canonicalEvent = canonicalizeJson({
       eventId: event.eventId,
       documentId: event.documentId,
