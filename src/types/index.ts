@@ -78,7 +78,7 @@ export interface DecryptionEventPayload {
   sessionId: string;
   watermarkId: string;
   watermarkCommitment: string;
-  watermarkSignatureBase64: string;
+  watermarkSignatureBase64?: string;
   timestampEpochMs: number;
   clientMetadata: {
     terminalId: string;
