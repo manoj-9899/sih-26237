@@ -231,7 +231,7 @@ Follow these exact steps in the running app to see the entire cryptographic pipe
 | FORENSIC STUDIO                                                               |
 | 1. Ingests leaked document text or file                                       |
 | 2. Blindly extracts zero-width whitespace character sequence                  |
-| 3. Decodes 32-byte payload & verifies CRC-16 checksum                         |
+| 3. Decodes compact payload + authenticated ML-DSA watermark context                         |
 | 4. Queries Air-Gapped DLT using extracted Session UUID                        |
 | 5. Verifies ML-DSA-65 digital signature against recipient's public key        |
 | 6. Confirms Merkle inclusion proof in committed block                         |
