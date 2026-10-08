@@ -8,7 +8,7 @@
  */
 
 import { DecryptionEvent, LedgerBlock, ValidatorNode, Recipient } from '../types';
-import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson, signEd25519, verifyEd25519, generateEd25519KeyPair } from '../crypto/pqc';
+import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson, signEd25519, verifyEd25519, generateEd25519KeyPair, bytesToHex } from '../crypto/pqc';
 import { airGappedStorage } from '../storage/airGappedStorage';
 
 // ==========================================
@@ -156,9 +156,44 @@ export class AirGappedLedger {
   private validators: ValidatorNode[] = [...INITIAL_VALIDATORS];
   private registeredRecipients: Map<string, Recipient> = new Map();
   private genesisInitPromise: Promise<void> | null = null;
+  private validatorKeyPairs = new Map<string, CryptoKeyPair>();
+  private validatorKeysInitPromise: Promise<void> | null = null;
 
   constructor() {
     // Chain will be initialized asynchronously via initGenesis()
+  }
+
+
+  private async ensureValidatorKeys(): Promise<void> {
+    if (this.validatorKeysInitPromise) return this.validatorKeysInitPromise;
+    this.validatorKeysInitPromise = (async () => {
+      for (const validator of this.validators) {
+        const stored = await airGappedStorage.getValidatorKeyPair(validator.id);
+        let pair = stored;
+        if (!pair) {
+          pair = await generateEd25519KeyPair();
+          await airGappedStorage.saveValidatorKeyPair(validator.id, pair);
+        }
+        this.validatorKeyPairs.set(validator.id, pair);
+        const rawPublic = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey));
+        validator.publicVerificationKeyHex = bytesToHex(rawPublic);
+        validator.signatureAlgorithm = 'Ed25519';
+      }
+    })();
+    return this.validatorKeysInitPromise;
+  }
+
+  private async signValidatorAttestation(validator: ValidatorNode, blockHash: string): Promise<string> {
+    const pair = this.validatorKeyPairs.get(validator.id);
+    if (!pair) throw new Error(`Validator key unavailable: ${validator.id}`);
+    const message = new TextEncoder().encode(`SIH-BLOCK-ATTEST-V2:${blockHash}`);
+    return bytesToHex(await signEd25519(message, pair.privateKey));
+  }
+
+  private async verifyValidatorAttestation(validator: ValidatorNode, blockHash: string, signatureHex: string): Promise<boolean> {
+    const pair = this.validatorKeyPairs.get(validator.id);
+    if (!pair) return false;
+    return verifyEd25519(hexToBytes(signatureHex), new TextEncoder().encode(`SIH-BLOCK-ATTEST-V2:${blockHash}`), pair.publicKey);
   }
 
   public async initGenesis(): Promise<void> {
@@ -261,6 +296,7 @@ export class AirGappedLedger {
    * Mine / Propose and Finalize a new Block via multi-validator consensus.
    */
   public async commitBlock(): Promise<LedgerBlock | null> {
+    await this.ensureValidatorKeys();
     if (this.mempool.length === 0) {
       return null;
     }
@@ -277,18 +313,17 @@ export class AirGappedLedger {
     const blockData = `BLOCK:${height}:${previousBlock.blockHash}:${timestamp}:${merkleRoot}`;
     const blockHash = await sha256Hex(blockData);
 
-    // Generate multi-node validator signatures (2/3 quorum required)
+    // Require a genuine 3-of-4 quorum. Every online validator signs independently
+    // with its own Ed25519 private key; verifiers only need the public key.
+    const onlineValidators = this.validators.filter((v) => v.status === 'ONLINE' || v.status === 'VALIDATING' || v.status === 'SYNCED');
+    if (onlineValidators.length < 3) throw new Error('Consensus rejected: fewer than 3 of 4 validators are online.');
     const validatorSignatures = [];
-    for (const val of this.validators) {
-      const valSigData = `${blockHash}:${val.id}`;
-      const sigHex = await sha256Hex(valSigData); // Deterministic validator attestation
-      validatorSignatures.push({
-        validatorId: val.id,
-        validatorName: val.name,
-        signatureHex: sigHex,
-      });
+    for (const val of onlineValidators) {
+      const signatureHex = await this.signValidatorAttestation(val, blockHash);
+      validatorSignatures.push({ validatorId: val.id, validatorName: val.name, signatureHex, signatureAlgorithm: 'Ed25519' as const });
       val.blocksValidated++;
     }
+    if (validatorSignatures.length < 3) throw new Error('Consensus rejected: quorum attestations unavailable.');
 
     // Update transactions to COMMITTED
     for (const tx of transactions) {
@@ -424,6 +459,18 @@ export class AirGappedLedger {
             fieldFound: block.blockHash,
           },
         };
+      }
+
+      // 5. Verify every validator attestation with its public key.
+      if (block.height > 0) {
+        const onlineQuorum = block.validatorSignatures.filter((sig) => sig.signatureAlgorithm === 'Ed25519').length;
+        if (onlineQuorum < 3) return { isValid: false, totalBlocksChecked: i, totalTransactionsChecked: txCount, tamperDetected: { blockHeight: block.height, reason: 'Validator quorum signature count below 3-of-4 requirement', fieldExpected: '>=3', fieldFound: String(onlineQuorum) } };
+        for (const sig of block.validatorSignatures) {
+          const validator = this.validators.find((v) => v.id === sig.validatorId);
+          if (!validator || !(await this.verifyValidatorAttestation(validator, block.blockHash, sig.signatureHex))) {
+            return { isValid: false, totalBlocksChecked: i, totalTransactionsChecked: txCount, tamperDetected: { blockHeight: block.height, reason: `Invalid Ed25519 validator attestation from ${sig.validatorId}`, fieldExpected: 'VALID_ED25519_SIGNATURE', fieldFound: 'FAILED_VERIFICATION' } };
+          }
+        }
       }
 
       // 5. Verify recipient ML-DSA-65 signatures in the block
