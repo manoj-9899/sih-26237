@@ -142,7 +142,7 @@ export interface SymmetricEncryptionResult {
 
 export async function encryptDocumentContent(
   plaintextBytes: Uint8Array,
-  aadString = 'AUTHENTICATED-DOCUMENT-HEADER'
+  aadString: string
 ): Promise<SymmetricEncryptionResult> {
   // Generate a random 256-bit Content Encryption Key (CEK)
   const cekRaw = crypto.getRandomValues(new Uint8Array(32));
@@ -186,7 +186,7 @@ export async function decryptDocumentContent(
   tag: Uint8Array,
   iv: Uint8Array,
   cekRaw: Uint8Array,
-  aadString = 'AUTHENTICATED-DOCUMENT-HEADER'
+  aadString: string
 ): Promise<Uint8Array> {
   const combined = new Uint8Array(ciphertext.length + tag.length);
   combined.set(ciphertext, 0);
