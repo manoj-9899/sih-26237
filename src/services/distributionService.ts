@@ -212,13 +212,20 @@ export class DistributionService {
       recipientManifestHash: recipientManifestHashSha256,
       mimeType: pkg.mimeType || (pkg.isPdf ? 'application/pdf' : 'text/plain'),
     });
-    const decryptedBytes = await decryptDocumentContent(
-      ciphertextBytes,
-      tagBytes,
-      ivBytes,
-      recoveredCek,
-      aad
-    );
+    let decryptedBytes: Uint8Array;
+    try {
+      decryptedBytes = await decryptDocumentContent(
+        ciphertextBytes,
+        tagBytes,
+        ivBytes,
+        recoveredCek,
+        aad
+      );
+    } finally {
+      // Best-effort browser heap hygiene. JavaScript cannot guarantee physical
+      // memory erasure, but the transient CEK must not remain referenced.
+      recoveredCek.fill(0);
+    }
     const isPdf = pkg.isPdf || (decryptedBytes.length >= 5 && decryptedBytes[0] === 0x25 && decryptedBytes[1] === 0x50 && decryptedBytes[2] === 0x44 && decryptedBytes[3] === 0x46);
     let rawPlaintext = '';
     if (!isPdf) {
