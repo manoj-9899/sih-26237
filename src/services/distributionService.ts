@@ -27,6 +27,7 @@ import {
   bytesToBase64,
   base64ToBytes,
   canonicalizeJson,
+  buildDocumentAad,
 } from '../crypto/pqc';
 import {
   embedWatermarkInText,
@@ -58,8 +59,26 @@ export class DistributionService {
     // 2. Canonical document hash: calculated directly from the original bytes
     const originalDocumentHashSha256 = await sha256Hex(rawBytes);
 
-    // 3. Symmetric AES-256-GCM encryption with fresh random CEK over complete binary bytes
-    const encResult = await encryptDocumentContent(rawBytes);
+    // Create the package identity and recipient manifest before encryption so AES-GCM AAD
+    // cryptographically binds the ciphertext to this exact distribution context.
+    const packageId = `PKG-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const recipientManifestHashSha256 = await sha256Hex(canonicalizeJson(recipients.map((r) => ({
+      id: r.id,
+      kemPublicKeyHex: r.keys.kemPublicKeyHex,
+      dsaPublicKeyHex: r.keys.dsaPublicKeyHex,
+      fingerprint: r.keys.keyFingerprint,
+    })).sort((a, b) => a.id.localeCompare(b.id))));
+    const aad = buildDocumentAad({
+      version: 2,
+      documentId: doc.id,
+      documentHashSha256: originalDocumentHashSha256,
+      packageId,
+      recipientManifestHash: recipientManifestHashSha256,
+      mimeType: doc.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
+    });
+
+    // 3. Symmetric AES-256-GCM encryption with metadata-bound authenticated data.
+    const encResult = await encryptDocumentContent(rawBytes, aad);
 
     // 4. Encapsulate CEK for each recipient using their NIST FIPS 203 (ML-KEM-768) public key
     const envelopes = [];
@@ -79,8 +98,6 @@ export class DistributionService {
       });
     }
 
-    const packageId = `PKG-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
-
     const pkg: EncryptedPackage = {
       packageId,
       documentId: doc.id,
@@ -98,6 +115,8 @@ export class DistributionService {
       isPdf,
       mimeType: doc.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
       filename: doc.filename || `${doc.title.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'txt'}`,
+      encryptionAadVersion: 2,
+      recipientManifestHashSha256,
     };
 
     await airGappedStorage.savePackage(pkg);
@@ -181,11 +200,24 @@ export class DistributionService {
     const tagBytes = hexToBytes(pkg.tagHex);
     const ivBytes = hexToBytes(pkg.ivHex);
 
+    const recipientManifestHashSha256 = pkg.recipientManifestHashSha256;
+    if (pkg.encryptionAadVersion !== 2 || !recipientManifestHashSha256) {
+      throw new Error('PackageSecurityError: Legacy package lacks authenticated distribution metadata.');
+    }
+    const aad = buildDocumentAad({
+      version: 2,
+      documentId: pkg.documentId,
+      documentHashSha256: pkg.originalDocumentHashSha256,
+      packageId: pkg.packageId,
+      recipientManifestHash: recipientManifestHashSha256,
+      mimeType: pkg.mimeType || (pkg.isPdf ? 'application/pdf' : 'text/plain'),
+    });
     const decryptedBytes = await decryptDocumentContent(
       ciphertextBytes,
       tagBytes,
       ivBytes,
-      recoveredCek
+      recoveredCek,
+      aad
     );
     const isPdf = pkg.isPdf || (decryptedBytes.length >= 5 && decryptedBytes[0] === 0x25 && decryptedBytes[1] === 0x50 && decryptedBytes[2] === 0x44 && decryptedBytes[3] === 0x46);
     let rawPlaintext = '';
