@@ -16,7 +16,7 @@ const SYNC_WORD = 0xa55a; // 16-bit synchronization header
 const ZW_ZERO = '\u200B'; // Zero-Width Space (bit 0)
 const ZW_ONE = '\u200C'; // Zero-Width Non-Joiner (bit 1)
 const ZW_SYNC = '\u200D'; // Zero-Width Joiner (Start/End sequence)
-const ZW_DELIM = '\uFEFF'; // Zero-Width No-Break Space (Byte separator)
+const ZW_DELIM = '\uFEFF'; // Zero-Width No-Break Space (Byte separator)\nconst ZW_AUTH_START = '\u2060'; // Word Joiner: invisible authentication-channel marker\nconst ZW_AUTH_END = '\u2063'; // Invisible separator terminator
 
 // ==========================================
 // CRC-16 Checksum for ECC / Verification
@@ -139,9 +139,18 @@ export function embedWatermarkInText(text: string, payload: WatermarkPayload): s
   }
   zwSequence += ZW_SYNC;
 
+  // The compact payload remains an error-detecting carrier. The ML-DSA-65
+  // authenticator is carried in a separate invisible channel so the forensic
+  // extractor can recover and verify it without the original document.
+  let authSequence = '';
+  if (payload.watermarkSignatureBase64) {
+    const authBytes = new TextEncoder().encode(payload.watermarkSignatureBase64);
+    authSequence = ZW_AUTH_START + Array.from(authBytes).map((b) => b.toString(16).padStart(2, '0')).join('') + ZW_AUTH_END;
+  }
+
   // Distribute invisible stego sequence after the first punctuation or space
-  const insertIndex = text.indexOf('\n') > 0 ? text.indexOf('\n') : Math.min(60, text.length);
-  return text.slice(0, insertIndex) + zwSequence + text.slice(insertIndex);
+  const insertIndex = text.indexOf('\\n') > 0 ? text.indexOf('\\n') : Math.min(60, text.length);
+  return text.slice(0, insertIndex) + zwSequence + authSequence + text.slice(insertIndex);
 }
 
 export function extractWatermarkFromText(text: string): WatermarkPayload | null {
@@ -165,7 +174,21 @@ export function extractWatermarkFromText(text: string): WatermarkPayload | null 
     bytes[i] = parseInt(byteBits, 2);
   }
 
-  return deserializeWatermarkPayload(bytes);
+  const payload = deserializeWatermarkPayload(bytes);
+  if (!payload) return null;
+  const authStart = text.indexOf(ZW_AUTH_START, end);
+  if (authStart >= 0) {
+    const authEnd = text.indexOf(ZW_AUTH_END, authStart + 1);
+    if (authEnd > authStart) {
+      const hex = text.slice(authStart + 1, authEnd);
+      if (/^[0-9a-fA-F]+$/.test(hex) && hex.length % 2 === 0) {
+        const authBytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < authBytes.length; i++) authBytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+        payload.watermarkSignatureBase64 = new TextDecoder().decode(authBytes);
+      }
+    }
+  }
+  return payload;
 }
 
 // ==========================================
@@ -388,6 +411,8 @@ export async function embedWatermarkInPdf(
     WatermarkId: watermarkPayload.watermarkId,
     TimestampEpochSec: Math.floor(watermarkPayload.timestamp / 1000),
     SyncHeader: '0xA55A',
+    DocumentHashSha256: watermarkPayload.documentHashSha256 || '',
+    WatermarkSignatureBase64: watermarkPayload.watermarkSignatureBase64 || '',
   });
 
   const forensicRef = context.register(forensicDict);
@@ -427,6 +452,8 @@ export interface PdfWatermarkExtractionResult {
   sessionId?: string;
   recipientFingerprint?: string;
   timestamp?: number;
+  watermarkSignatureBase64?: string;
+  documentHashSha256?: string;
   crcVerified?: boolean;
   error?: string;
   extractionSource?: 'STRUCTURAL_CATALOG_ENCLAVE' | 'PAGE_CONTENT_STREAM';
@@ -570,6 +597,11 @@ export async function extractWatermarkFromPdf(
       payloadBytes[i] = parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
     }
 
+    const signatureObj = forensicDict.get(PDFName.of('WatermarkSignatureBase64'));
+    const docHashObj = forensicDict.get(PDFName.of('DocumentHashSha256'));
+    const signature = signatureObj && typeof signatureObj.asString === 'function' ? signatureObj.asString() : String(signatureObj || '');
+    const documentHash = docHashObj && typeof docHashObj.asString === 'function' ? docHashObj.asString() : String(docHashObj || '');
+
     // 5. Validate Sync Word (Bytes 0..1 must be 0xA55A)
     const view = new DataView(payloadBytes.buffer, payloadBytes.byteOffset, payloadBytes.byteLength);
     const syncWord = view.getUint16(0, false);
@@ -614,6 +646,8 @@ export async function extractWatermarkFromPdf(
       timestamp: deserialized.timestamp,
       crcVerified: true,
       extractionSource: 'STRUCTURAL_CATALOG_ENCLAVE',
+      watermarkSignatureBase64: signature || undefined,
+      documentHashSha256: documentHash || undefined,
     };
   } catch (err: any) {
     return {
