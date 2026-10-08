@@ -240,6 +240,7 @@ export class DistributionService {
       recipientFingerprint: recipient.keys.keyFingerprint,
       timestamp,
       eccChecksum: 0,
+      documentHashSha256,
     };
 
     // Embed invisible watermark in text (for text documents or diagnostic text representation)
@@ -263,6 +264,18 @@ export class DistributionService {
       recipient.id,
       documentHashSha256
     );
+    const watermarkAuthMessage = canonicalizeJson({
+      version: 2,
+      sessionId,
+      watermarkId,
+      recipientId: recipient.id,
+      recipientFingerprint: recipient.keys.keyFingerprint,
+      timestampEpochMs: timestamp,
+      documentHashSha256,
+      watermarkCommitment,
+    });
+    const watermarkSignatureBytes = signWithMlDsa65(new TextEncoder().encode(watermarkAuthMessage), dsaSecretBytes);
+    watermarkPayload.watermarkSignatureBase64 = bytesToBase64(watermarkSignatureBytes);
 
     const eventId = `EVT-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
 
@@ -278,6 +291,7 @@ export class DistributionService {
       sessionId,
       watermarkId,
       watermarkCommitment,
+      watermarkSignatureBase64: watermarkPayload.watermarkSignatureBase64!,
       timestampEpochMs: timestamp,
       clientMetadata: {
         terminalId: `SECURE-WS-${recipient.avatarInitials}-409`,
@@ -296,6 +310,7 @@ export class DistributionService {
       sessionId: eventPayload.sessionId,
       watermarkId: eventPayload.watermarkId,
       watermarkCommitment: eventPayload.watermarkCommitment,
+      watermarkSignatureBase64: eventPayload.watermarkSignatureBase64,
       timestampEpochMs: eventPayload.timestampEpochMs,
     });
 
