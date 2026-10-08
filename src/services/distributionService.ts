@@ -479,14 +479,18 @@ export class DistributionService {
       sessionId: extractedPayload.sessionId,
       watermarkId: extractedPayload.watermarkId,
       recipientId: event.recipientId,
-      recipientFingerprint: event.recipientPubkeyFingerprint,
-      timestampEpochMs: event.timestampEpochMs,
-      documentHashSha256: event.documentHashSha256,
+      recipientFingerprint: extractedPayload.recipientFingerprint,
+      timestampEpochMs: extractedPayload.timestamp,
+      documentHashSha256: extractedPayload.documentHashSha256 || event.documentHashSha256,
       watermarkCommitment: event.watermarkCommitment,
     });
     const extractedSignature = extractedPayload.watermarkSignatureBase64;
+    const extractedMetadataMatchesLedger =
+      extractedPayload.recipientFingerprint.toLowerCase() === event.recipientPubkeyFingerprint.toLowerCase() &&
+      extractedPayload.timestamp === event.timestampEpochMs &&
+      (!extractedPayload.documentHashSha256 || extractedPayload.documentHashSha256 === event.documentHashSha256);
     const signatureMatchesLedger = !!extractedSignature && extractedSignature === event.watermarkSignatureBase64;
-    const watermarkSignatureValid = !!watermarkRecipient && signatureMatchesLedger && verifyMlDsa65(
+    const watermarkSignatureValid = extractedMetadataMatchesLedger && !!watermarkRecipient && signatureMatchesLedger && verifyMlDsa65(
       base64ToBytes(extractedSignature!),
       new TextEncoder().encode(watermarkAuthMessage),
       hexToBytes(watermarkRecipient.keys.dsaPublicKeyHex)
