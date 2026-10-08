@@ -118,7 +118,7 @@ export interface ValidatorNode {
   status: 'ONLINE' | 'VALIDATING' | 'SYNCED';
   blocksValidated: number;
   publicVerificationKeyHex: string;
-  signatureAlgorithm?: 'Ed25519';
+  signatureAlgorithm?: 'Ed25519' | 'GENESIS-TRUSTED';
 }
 
 export interface LedgerBlock {
