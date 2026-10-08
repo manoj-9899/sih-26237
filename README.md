@@ -188,7 +188,7 @@ Follow these exact steps in the running app to see the entire cryptographic pipe
 * **Post-Quantum Provenance Signatures (ML-DSA-65):**
   Uses NIST FIPS 204 (ML-DSA-65) digital signatures to sign RFC 8785 canonical JSON records of every decryption event before releasing plaintext.
 * **Offline Air-Gapped Distributed Ledger (DLT):**
-  A local permissioned ledger with SHA-256 block chaining, Merkle validation, and 3-of-4 Ed25519 validator attestations. Browser mode is a local quorum demonstration; the separate validator daemons provide the distributed execution mode.
+  A local permissioned ledger with SHA-256 block chaining, Merkle validation, and 3-of-4 Ed25519 validator attestations. The current repository runs this quorum inside the browser enclave; an externally distributed validator daemon network is not claimed by this prototype.
 * **Administrative Anti-Tamper Auditor:**
   Detects unauthorized database modifications or retroactive administrator tampering down to the exact block, byte, and transaction hash.
 * **Court-Ready Forensic Evidence Certificate:**
@@ -496,7 +496,7 @@ To maintain technical credibility and engineering honesty, the following constra
 1. **Simulated Hardware Keystores:** Private keys are protected using browser-level encryption (PBKDF2 + AES-GCM). While functional for a prototype, production defense deployments require physical smart cards, TPM 2.0, or PKCS#11 hardware security modules (HSMs).
 2. **Document Formats:** The current steganographic engine is designed for **text-based classified intelligence documents** (`.txt`, `.md`). It injects zero-width whitespace permutations. It does not currently inject watermarks into binary image files, scanned PDFs, or physical printed paper.
 3. **Watermark Robustness:** The watermark survives copy-pasting, document re-saving, and minor whitespace edits. However, extensive human paraphrasing (re-writing the document in different words) or optical character recognition (OCR) from low-resolution photographs will degrade or destroy the whitespace carrier.
-4. **In-Enclave Distributed Ledger:** Browser mode keeps a local four-validator quorum for zero-setup demonstration. The hardened distributed mode uses separate validator processes with independent Ed25519 signing keys and disk-backed state. Print/rescan and aggressive lossy re-encoding remain known watermark robustness limits.
+4. **In-Enclave Distributed Ledger:** The hardened browser prototype keeps four independent validator identities with real Ed25519 attestations and a 3-of-4 quorum. A separate multi-process validator network is a future deployment boundary, not part of the current repository. Print/rescan and aggressive lossy re-encoding remain known watermark robustness limits.
 
 ---
 
