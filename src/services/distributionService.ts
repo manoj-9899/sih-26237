@@ -723,7 +723,7 @@ export class DistributionService {
       ledgerIntegrityValid: true,
       attributedRecipient: recipient,
       attributionVerdict: 'CONFIRMED_LEAK_SOURCE',
-      confidenceScore: 99.98,
+      confidenceScore: 100,
       evidenceChain,
     };
   }
