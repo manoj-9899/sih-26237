@@ -108,6 +108,16 @@ class AirGappedStorage {
     }
   }
 
+  public async clearBlocks(): Promise<void> {
+    await this.isReady();
+    if (this.db) {
+      const tx = this.db.transaction(STORES.BLOCKS, 'readwrite');
+      tx.objectStore(STORES.BLOCKS).clear();
+    } else {
+      localStorage.removeItem('sih_dlt_blocks');
+    }
+  }
+
   // --- PACKAGES ---
   public async savePackage(pkg: any): Promise<void> {
     await this.isReady();
