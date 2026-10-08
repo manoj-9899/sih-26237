@@ -11,7 +11,7 @@ describe('TEST GROUP 3: AES-256-GCM Bulk Symmetric Cipher', () => {
     const rawPlaintext = 'TOP SECRET CLASSIFIED DIRECTIVE 2026 - QUANTUM TRANSITION PROTOCOL';
     const plaintextBytes = new TextEncoder().encode(rawPlaintext);
 
-    const { cekRaw, ciphertext, iv, tag } = await encryptDocumentContent(plaintextBytes);
+    const { cekRaw, ciphertext, iv, tag } = await encryptDocumentContent(plaintextBytes, 'TEST-AAD-V2');
 
     assert.strictEqual(cekRaw.length, 32, 'Content encryption key must be 32 bytes (AES-256)');
     assert.strictEqual(iv.length, 12, 'IV must be 12 bytes (96 bits)');
