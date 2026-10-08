@@ -70,6 +70,7 @@ export async function computeTransactionHash(tx: DecryptionEvent): Promise<strin
     sessionId: tx.sessionId,
     watermarkId: tx.watermarkId,
     watermarkCommitment: tx.watermarkCommitment,
+    watermarkSignatureBase64: tx.watermarkSignatureBase64,
     timestampEpochMs: tx.timestampEpochMs,
     recipientSignatureBase64: tx.recipientSignatureBase64,
   };
@@ -389,6 +390,7 @@ export class AirGappedLedger {
       fieldFound: string;
     };
   }> {
+    await this.ensureValidatorKeys();
     let txCount = 0;
 
     for (let i = 0; i < this.chain.length; i++) {
