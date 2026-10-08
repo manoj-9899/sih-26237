@@ -8,7 +8,7 @@
  */
 
 import { DecryptionEvent, LedgerBlock, ValidatorNode, Recipient } from '../types';
-import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson } from '../crypto/pqc';
+import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson, signEd25519, verifyEd25519, generateEd25519KeyPair } from '../crypto/pqc';
 import { airGappedStorage } from '../storage/airGappedStorage';
 
 // ==========================================
@@ -234,6 +234,7 @@ export class AirGappedLedger {
       sessionId: event.sessionId,
       watermarkId: event.watermarkId,
       watermarkCommitment: event.watermarkCommitment,
+      watermarkSignatureBase64: event.watermarkSignatureBase64,
       timestampEpochMs: event.timestampEpochMs,
     });
 
@@ -440,6 +441,7 @@ export class AirGappedLedger {
             sessionId: tx.sessionId,
             watermarkId: tx.watermarkId,
             watermarkCommitment: tx.watermarkCommitment,
+            watermarkSignatureBase64: tx.watermarkSignatureBase64,
             timestampEpochMs: tx.timestampEpochMs,
           });
 
