@@ -60,7 +60,7 @@ export const INITIAL_VALIDATORS: ValidatorNode[] = [
 
 export async function computeTransactionHash(tx: DecryptionEvent): Promise<string> {
   // Canonical serialization of the transaction payload using RFC 8785
-  const canonicalData = {
+  const canonicalData: Record<string, unknown> = {
     eventId: tx.eventId,
     documentId: tx.documentId,
     documentHashSha256: tx.documentHashSha256,
@@ -70,10 +70,10 @@ export async function computeTransactionHash(tx: DecryptionEvent): Promise<strin
     sessionId: tx.sessionId,
     watermarkId: tx.watermarkId,
     watermarkCommitment: tx.watermarkCommitment,
-    watermarkSignatureBase64: tx.watermarkSignatureBase64,
     timestampEpochMs: tx.timestampEpochMs,
     recipientSignatureBase64: tx.recipientSignatureBase64,
   };
+  if (tx.watermarkSignatureBase64) canonicalData.watermarkSignatureBase64 = tx.watermarkSignatureBase64;
   return await sha256Hex(canonicalizeJson(canonicalData));
 }
 
@@ -270,11 +270,23 @@ export class AirGappedLedger {
       sessionId: event.sessionId,
       watermarkId: event.watermarkId,
       watermarkCommitment: event.watermarkCommitment,
-      watermarkSignatureBase64: event.watermarkSignatureBase64,
       timestampEpochMs: event.timestampEpochMs,
     });
 
-    const msgBytes = new TextEncoder().encode(canonicalMessage);
+    const canonicalEvent = canonicalizeJson({
+      eventId: event.eventId,
+      documentId: event.documentId,
+      documentHashSha256: event.documentHashSha256,
+      packageHashSha256: event.packageHashSha256,
+      recipientId: event.recipientId,
+      recipientPubkeyFingerprint: event.recipientPubkeyFingerprint,
+      sessionId: event.sessionId,
+      watermarkId: event.watermarkId,
+      watermarkCommitment: event.watermarkCommitment,
+      ...(event.watermarkSignatureBase64 ? { watermarkSignatureBase64: event.watermarkSignatureBase64 } : {}),
+      timestampEpochMs: event.timestampEpochMs,
+    });
+    const msgBytes = new TextEncoder().encode(canonicalEvent);
     const sigBytes = base64ToBytes(event.recipientSignatureBase64);
     const pubKeyBytes = hexToBytes(recipient.keys.dsaPublicKeyHex);
 
@@ -490,7 +502,7 @@ export class AirGappedLedger {
             sessionId: tx.sessionId,
             watermarkId: tx.watermarkId,
             watermarkCommitment: tx.watermarkCommitment,
-            watermarkSignatureBase64: tx.watermarkSignatureBase64,
+            ...(tx.watermarkSignatureBase64 ? { watermarkSignatureBase64: tx.watermarkSignatureBase64 } : {}),
             timestampEpochMs: tx.timestampEpochMs,
           });
 
