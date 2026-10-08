@@ -10,7 +10,12 @@ import {
   verifyEd25519,
   bytesToBase64,
   base64ToBytes,
+  generateRecipientPqcKeys,
+  signWithMlDsa65,
+  canonicalizeJson,
+  sha256Hex,
 } from '../src/crypto/pqc.ts';
+import { embedWatermarkInText, extractWatermarkFromText } from '../src/watermark/engine.ts';
 
 describe('Security hardening regressions', () => {
   it('binds AES-GCM to distribution metadata', async () => {
@@ -46,4 +51,36 @@ describe('Security hardening regressions', () => {
     assert.strictEqual(bytesToBase64(signature).length > 0, true);
     assert.strictEqual(base64ToBytes(bytesToBase64(signature)).length, 64);
   });
+  it('authenticates a forensic watermark instead of trusting CRC alone', async () => {
+    const keys = await generateRecipientPqcKeys();
+    const documentHashSha256 = await sha256Hex('forensic-document');
+    const payload: any = {
+      syncHeader: 0xa55a,
+      sessionId: '11111111-2222-3333-4444-555555555555',
+      watermarkId: 'WM-11111111',
+      recipientId: 'ALICE',
+      recipientFingerprint: keys.fingerprint,
+      timestamp: 1790611200000,
+      eccChecksum: 0,
+      documentHashSha256,
+    };
+    const commitment = await sha256Hex('WM-COMMIT:' + payload.sessionId + ':' + payload.recipientId + ':' + documentHashSha256);
+    const auth = canonicalizeJson({
+      version: 2,
+      sessionId: payload.sessionId,
+      watermarkId: payload.watermarkId,
+      recipientId: payload.recipientId,
+      recipientFingerprint: payload.recipientFingerprint,
+      timestampEpochMs: payload.timestamp,
+      documentHashSha256,
+      watermarkCommitment: commitment,
+    });
+    payload.watermarkSignatureBase64 = bytesToBase64(signWithMlDsa65(new TextEncoder().encode(auth), keys.dsaSecretKey));
+    const extracted = extractWatermarkFromText(embedWatermarkInText('CLASSIFIED DOCUMENT', payload));
+    assert.ok(extracted);
+    assert.strictEqual(extracted?.documentHashSha256, documentHashSha256);
+    assert.strictEqual(extracted?.watermarkSignatureBase64, payload.watermarkSignatureBase64);
+    assert.strictEqual(extracted?.recipientFingerprint, keys.fingerprint);
+  });
+
 });
