@@ -21,7 +21,7 @@ With standard encryption (like traditional PGP, email encryption, or password-pr
 Instead of simply handing out decrypted text, this workstation binds **decryption to an accountable cryptographic event**:
 * When a recipient opens and decrypts the document, the software silently weaves an **invisible watermark** into the text containing their unique identity, session ID, and timestamp.
 * Before showing the plaintext document, the system requires the recipient's post-quantum digital signature and records the event in an **immutable, air-gapped distributed ledger (DLT)**.
-* If a recipient leaks the document, an investigator can feed the leaked text into the **Forensic Studio**. The software extracts the hidden watermark, checks the blockchain ledger, verifies the digital signature, and proves exactly who leaked the document with mathematical certainty.
+* If a recipient leaks the document, an investigator can feed the leaked text into the **Forensic Studio**. The software extracts the hidden watermark, checks the blockchain ledger, verifies the digital signature, and can attribute the leak when the extracted authenticated watermark matches a signed provenance event and intact ledger evidence.
 
 ---
 
@@ -161,13 +161,13 @@ Follow these exact steps in the running app to see the entire cryptographic pipe
 #### 5. Catch the Leaker in Forensic Studio
 1. You are now in the **Forensic Studio** with the leaked text pre-loaded in the ingestion box.
 2. Click **EXECUTE BLIND FORENSIC ATTRIBUTION**.
-3. **What you see:** The forensic engine scans the zero-width whitespace entropy, extracts the 32-byte binary payload, queries the ledger, matches the watermark commitment in Block #1, verifies Alice's ML-DSA-65 signature, and generates the **Forensic Attribution Certificate** naming **Dr. Alice Vance** as the leaker with 100% mathematical certainty.
+3. **What you see:** The forensic engine scans the zero-width whitespace entropy, extracts the 32-byte binary payload, queries the ledger, matches the watermark commitment in Block #1, verifies Alice's ML-DSA-65 signature, and generates the **Forensic Attribution Certificate** naming **Dr. Alice Vance** as the matched provenance source when every verification gate passes.
 4. Click **Download Certificate (.json)** to export the court-ready proof.
 
 #### 6. Audit the Immutable Ledger in DLT Explorer
 1. Click the **DLT Explorer** tab.
 2. Inspect the **Committed Blocks Rail** to view Block #1 and its Merkle root.
-3. Click **Audit Entire Chain**. Notice the result: `LEDGER INTEGRITY VERIFIED: 100% UNTAMPERED`.
+3. Click **Audit Entire Chain**. Notice the result: `LEDGER INTEGRITY VERIFIED: cryptographic chain and validator attestations valid`.
 4. Click **Simulate Rogue Admin Tamper**. A rogue database administrator attempts to modify a historical record.
 5. The audit engine immediately sounds a critical alert, pinpointing the exact block height and hash mismatch where tampering occurred.
 6. Click **Restore Quorum Integrity** to return the ledger to a synchronized state.
@@ -184,11 +184,11 @@ Follow these exact steps in the running app to see the entire cryptographic pipe
 * **Broadcast Multi-Recipient Encryption (ML-KEM-768):**
   Encrypts the document payload once using AES-256-GCM and wraps the 256-bit Content Encryption Key (CEK) independently for each recipient using NIST FIPS 203 (ML-KEM-768). Legacy RSA and ECC are completely excluded.
 * **Invisible Decryption-Time Watermarking:**
-  Embeds a structured 32-byte binary payload (sync header, session UUID, watermark ID, recipient fingerprint, timestamp, and CRC-16 checksum) into zero-width Unicode whitespace characters. The text appears completely unaltered to human readers and word processors ($SSIM \ge 0.9998$, $PSNR > 49\text{ dB}$).
+  Embeds a structured forensic payload with session, recipient fingerprint, timestamp, document binding, and an ML-DSA-65 authenticator. CRC-16 remains an error-detection layer; attribution requires the authenticated watermark to match signed ledger provenance. Digital carriers are resilient to normal PDF/text handling but are not guaranteed against print/rescan or aggressive lossy re-encoding.
 * **Post-Quantum Provenance Signatures (ML-DSA-65):**
   Uses NIST FIPS 204 (ML-DSA-65) digital signatures to sign RFC 8785 canonical JSON records of every decryption event before releasing plaintext.
 * **Offline Air-Gapped Distributed Ledger (DLT):**
-  A local permissioned blockchain operating in browser enclave storage with SHA-256 block hash chaining, binary Merkle tree DAG validation, and 3/3 validator quorum logic.
+  A local permissioned ledger with SHA-256 block chaining, Merkle validation, and 3-of-4 Ed25519 validator attestations. Browser mode is a local quorum demonstration; the separate validator daemons provide the distributed execution mode.
 * **Administrative Anti-Tamper Auditor:**
   Detects unauthorized database modifications or retroactive administrator tampering down to the exact block, byte, and transaction hash.
 * **Court-Ready Forensic Evidence Certificate:**
@@ -221,7 +221,7 @@ Follow these exact steps in the running app to see the entire cryptographic pipe
 | 4. Injects invisible 32-byte binary watermark into whitespace entropy         |
 | 5. Signs Decryption Event using Alice's ML-DSA-65 private key                 |
 | 6. Commits signed event to Air-Gapped DLT Mempool                             |
-| 7. 3/3 Validator Quorum ratifies Block -> Transaction finalized               |
+| 7. 3/4 Validator Attestation Quorum ratifies Block -> Transaction finalized               |
 | 8. Clean, watermarked document released to Alice's viewport                   |
 +-------------------------------------------------------------------------------+
                                       |
@@ -251,7 +251,7 @@ The interface is built as a dark-mode institutional defense workstation:
 | **Sender Studio** | Packaging and dispatch terminal | Choose a classified document, toggle authorized recipients, trigger ML-KEM-768 broadcast encryption, inspect key envelopes, and dispatch the package. |
 | **Recipient Portal** | Secure decryption workstation | Select an enrolled operator identity, verify envelope authorization, execute the 6-stage decryption pipeline, inspect the forensic stego channel (muted ochre), read the decrypted document, download `.txt`, or simulate a leak. |
 | **Forensic Studio** | Forensic investigation workbench | Ingest a leaked document via text paste or file upload, execute blind stego extraction, query the DLT ledger, verify the ML-DSA-65 signature, and export a court-ready certificate (`.json`). |
-| **DLT Explorer** | Offline ledger inspection console | Monitor the 3/3 validator quorum, inspect committed blocks and Merkle roots, audit full chain integrity, and simulate/restore rogue administrator database tampering attacks. |
+| **DLT Explorer** | Offline ledger inspection console | Monitor the 3-of-4 validator attestation quorum, inspect committed blocks and Merkle roots, audit full chain integrity, and simulate/restore rogue administrator database tampering attacks. |
 | **PQC Registry** | Cryptographic identity directory | Inspect enrolled personnel public keys (ML-KEM-768 and ML-DSA-65), copy raw hex strings, view fingerprints, and synthesize live post-quantum keypairs via client WebAssembly. |
 | **Attack Lab** | Adversarial security testing bench | Run 7 automated cryptographic stress tests (unauthorized access, ciphertext bit-flips, signature forgery, historical ledger rewrites, false positives) with live log streams. |
 
@@ -276,7 +276,7 @@ The interface is built as a dark-mode institutional defense workstation:
 |   CRYPTOGRAPHY   |       |  STEGANOGRAPHY   |       |   LEDGER / DLT   |
 | • ML-KEM-768     |       | • Zero-Width     |       | • Block Chaining |
 | • ML-DSA-65     |       | • 32-Byte Payload|       | • Merkle Trees   |
-| • AES-256-GCM    |       | • CRC-16 Check   |       | • 3/3 Quorum     |
+| • AES-256-GCM    |       | • CRC-16 + ML-DSA Auth |       | • 3-of-4 Ed25519 Quorum     |
 | • PBKDF2 KDF     |       | • Invariance Calc|       | • Anti-Tamper    |
 +------------------+       +------------------+       +------------------+
          \                           |                          /
@@ -471,7 +471,7 @@ The application includes an automated security testing suite in the **Attack Lab
 2. **Post-Quantum Security:** Symmetric keys are protected by lattice-based cryptography (ML-KEM-768), safeguarding documents against *"Harvest Now, Decrypt Later"* attacks.
 3. **Decryption Accountability:** A recipient cannot access the plaintext without triggering the injection of an invisible watermark and signing a Decryption Event.
 4. **Non-Repudiation:** Once a recipient signs the Decryption Event with their ML-DSA-65 private key, they cannot mathematically deny having decrypted that document.
-5. **Ledger Immutability:** Because each block references the previous block's SHA-256 hash and includes a binary Merkle tree root signed by a validator quorum, retroactive modification of access logs is immediately detected.
+5. **Ledger Immutability:** Because each block references the previous block's SHA-256 hash and includes a binary Merkle tree root covered by independently verifiable validator attestations, retroactive modification of access logs is immediately detected.
 
 ### Security Boundaries & Realistic Expectations
 * **Plaintext Leak Protection:** No cryptographic system can physically prevent a user from reading authorized text on a monitor. Instead, this system provides **deterrence and accountability**: if the user copies, takes a screenshot of, or leaks the text, their identity is forensically extractable.
@@ -496,7 +496,7 @@ To maintain technical credibility and engineering honesty, the following constra
 1. **Simulated Hardware Keystores:** Private keys are protected using browser-level encryption (PBKDF2 + AES-GCM). While functional for a prototype, production defense deployments require physical smart cards, TPM 2.0, or PKCS#11 hardware security modules (HSMs).
 2. **Document Formats:** The current steganographic engine is designed for **text-based classified intelligence documents** (`.txt`, `.md`). It injects zero-width whitespace permutations. It does not currently inject watermarks into binary image files, scanned PDFs, or physical printed paper.
 3. **Watermark Robustness:** The watermark survives copy-pasting, document re-saving, and minor whitespace edits. However, extensive human paraphrasing (re-writing the document in different words) or optical character recognition (OCR) from low-resolution photographs will degrade or destroy the whitespace carrier.
-4. **In-Enclave Distributed Ledger:** The 3-node validator quorum (Alpha, Bravo, Gamma nodes) runs within the client-side DLT service to allow complete demonstration on a single computer. In a production enterprise deployment, each validator would be an independent physical server on an isolated local network.
+4. **In-Enclave Distributed Ledger:** Browser mode keeps a local four-validator quorum for zero-setup demonstration. The hardened distributed mode uses separate validator processes with independent Ed25519 signing keys and disk-backed state. Print/rescan and aggressive lossy re-encoding remain known watermark robustness limits.
 
 ---
 
