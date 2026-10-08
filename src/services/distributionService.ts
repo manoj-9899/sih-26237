@@ -231,6 +231,7 @@ export class DistributionService {
     const sessionId = crypto.randomUUID();
     const watermarkId = `WM-${sessionId.slice(0, 8).toUpperCase()}`;
     const timestamp = Date.now();
+    const documentHashSha256 = await sha256Hex(decryptedBytes);
 
     const watermarkPayload: WatermarkPayload = {
       syncHeader: 0xa55a,
@@ -257,7 +258,6 @@ export class DistributionService {
     }
 
     // 5. Construct Decryption Event Payload
-    const documentHashSha256 = await sha256Hex(decryptedBytes);
     const packageHashSha256 = await sha256Hex(pkg.ciphertextBase64);
     const watermarkCommitment = await computeWatermarkCommitment(
       sessionId,
