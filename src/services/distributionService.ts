@@ -244,19 +244,6 @@ export class DistributionService {
       documentHashSha256,
     };
 
-    // Embed invisible watermark in text (for text documents or diagnostic text representation)
-    const watermarkedText = embedWatermarkInText(rawPlaintext, watermarkPayload);
-
-    // Embed invisible watermark into authentic PDF binary bytes if document is a PDF
-    let finalDecryptedBytes = decryptedBytes;
-    if (isPdf) {
-      try {
-        finalDecryptedBytes = await embedWatermarkInPdf(decryptedBytes, watermarkPayload);
-      } catch (embedErr) {
-        console.warn('PDF Watermark embedding fallback to original bytes:', embedErr);
-      }
-    }
-
     // 5. Construct Decryption Event Payload
     const packageHashSha256 = await sha256Hex(pkg.ciphertextBase64);
     const watermarkCommitment = await computeWatermarkCommitment(
@@ -276,6 +263,18 @@ export class DistributionService {
     });
     const watermarkSignatureBytes = signWithMlDsa65(new TextEncoder().encode(watermarkAuthMessage), dsaSecretBytes);
     watermarkPayload.watermarkSignatureBase64 = bytesToBase64(watermarkSignatureBytes);
+
+    // Embed only after the authenticator has been created so every forensic carrier
+    // contains the signed watermark context.
+    const watermarkedText = embedWatermarkInText(rawPlaintext, watermarkPayload);
+    let finalDecryptedBytes = decryptedBytes;
+    if (isPdf) {
+      try {
+        finalDecryptedBytes = await embedWatermarkInPdf(decryptedBytes, watermarkPayload);
+      } catch (embedErr) {
+        throw new Error(`WatermarkSecurityError: authenticated PDF watermark embedding failed: ${embedErr instanceof Error ? embedErr.message : String(embedErr)}`);
+      }
+    }
 
     const eventId = `EVT-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
 
