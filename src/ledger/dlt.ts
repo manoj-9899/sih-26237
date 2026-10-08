@@ -8,7 +8,7 @@
  */
 
 import { DecryptionEvent, LedgerBlock, ValidatorNode, Recipient } from '../types';
-import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson } from '../crypto/pqc';
+import { sha256Hex, verifyMlDsa65, base64ToBytes, hexToBytes, canonicalizeJson, signEd25519, verifyEd25519, generateEd25519KeyPair, bytesToHex } from '../crypto/pqc';
 import { airGappedStorage } from '../storage/airGappedStorage';
 
 // ==========================================
@@ -60,7 +60,7 @@ export const INITIAL_VALIDATORS: ValidatorNode[] = [
 
 export async function computeTransactionHash(tx: DecryptionEvent): Promise<string> {
   // Canonical serialization of the transaction payload using RFC 8785
-  const canonicalData = {
+  const canonicalData: Record<string, unknown> = {
     eventId: tx.eventId,
     documentId: tx.documentId,
     documentHashSha256: tx.documentHashSha256,
@@ -73,6 +73,7 @@ export async function computeTransactionHash(tx: DecryptionEvent): Promise<strin
     timestampEpochMs: tx.timestampEpochMs,
     recipientSignatureBase64: tx.recipientSignatureBase64,
   };
+  if (tx.watermarkSignatureBase64) canonicalData.watermarkSignatureBase64 = tx.watermarkSignatureBase64;
   return await sha256Hex(canonicalizeJson(canonicalData));
 }
 
@@ -121,16 +122,19 @@ export async function createGenesisBlock(): Promise<LedgerBlock> {
       validatorId: INITIAL_VALIDATORS[0].id,
       validatorName: INITIAL_VALIDATORS[0].name,
       signatureHex: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
     {
       validatorId: INITIAL_VALIDATORS[1].id,
       validatorName: INITIAL_VALIDATORS[1].name,
       signatureHex: 'b2c3d4e5f6a17890123456789abcdef0123456789abcdef0123456789abcdef1',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
     {
       validatorId: INITIAL_VALIDATORS[2].id,
       validatorName: INITIAL_VALIDATORS[2].name,
       signatureHex: 'c3d4e5f6a1b27890123456789abcdef0123456789abcdef0123456789abcdef2',
+      signatureAlgorithm: 'GENESIS-TRUSTED',
     },
   ];
 
@@ -156,20 +160,65 @@ export class AirGappedLedger {
   private validators: ValidatorNode[] = [...INITIAL_VALIDATORS];
   private registeredRecipients: Map<string, Recipient> = new Map();
   private genesisInitPromise: Promise<void> | null = null;
+  private validatorKeyPairs = new Map<string, CryptoKeyPair>();
+  private validatorKeysInitPromise: Promise<void> | null = null;
 
   constructor() {
     // Chain will be initialized asynchronously via initGenesis()
   }
 
+
+  private async ensureValidatorKeys(): Promise<void> {
+    if (this.validatorKeysInitPromise) return this.validatorKeysInitPromise;
+    this.validatorKeysInitPromise = (async () => {
+      for (const validator of this.validators) {
+        const stored = await airGappedStorage.getValidatorKeyPair(validator.id);
+        let pair = stored;
+        if (!pair) {
+          pair = await generateEd25519KeyPair();
+          await airGappedStorage.saveValidatorKeyPair(validator.id, pair);
+        }
+        this.validatorKeyPairs.set(validator.id, pair);
+        const rawPublic = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey));
+        validator.publicVerificationKeyHex = bytesToHex(rawPublic);
+        validator.signatureAlgorithm = 'Ed25519';
+      }
+    })();
+    return this.validatorKeysInitPromise;
+  }
+
+  private async signValidatorAttestation(validator: ValidatorNode, blockHash: string): Promise<string> {
+    const pair = this.validatorKeyPairs.get(validator.id);
+    if (!pair) throw new Error(`Validator key unavailable: ${validator.id}`);
+    const message = new TextEncoder().encode(`SIH-BLOCK-ATTEST-V2:${blockHash}`);
+    return bytesToHex(await signEd25519(message, pair.privateKey));
+  }
+
+  private async verifyValidatorAttestation(validator: ValidatorNode, blockHash: string, signatureHex: string): Promise<boolean> {
+    const pair = this.validatorKeyPairs.get(validator.id);
+    if (!pair) return false;
+    return verifyEd25519(hexToBytes(signatureHex), new TextEncoder().encode(`SIH-BLOCK-ATTEST-V2:${blockHash}`), pair.publicKey);
+  }
+
   public async initGenesis(): Promise<void> {
     if (this.chain.length > 0) return;
+    await this.ensureValidatorKeys();
     if (!this.genesisInitPromise) {
       this.genesisInitPromise = (async () => {
         // Check local persistent IndexedDB first
         const savedBlocks = await airGappedStorage.getBlocks();
         if (savedBlocks && savedBlocks.length > 0) {
-          this.chain = savedBlocks;
-          return;
+          const hasLegacyValidatorAttestations = savedBlocks.some((block: LedgerBlock) =>
+            block.height > 0 && block.validatorSignatures.some((sig) => sig.signatureAlgorithm !== 'Ed25519')
+          );
+          if (!hasLegacyValidatorAttestations) {
+            this.chain = savedBlocks;
+            return;
+          }
+          // Legacy browser blocks used deterministic hashes as validator attestations.
+          // Do not silently trust them after the hardening upgrade; start a new trusted chain.
+          console.warn('[DLT] Legacy validator attestations detected; starting a hardened ledger epoch.');
+          await airGappedStorage.clearBlocks();
         }
 
         if (this.chain.length === 0) {
@@ -224,7 +273,7 @@ export class AirGappedLedger {
     }
 
     // 1. Verify ML-DSA-65 signature on the canonical RFC 8785 event payload
-    const canonicalMessage = canonicalizeJson({
+    const canonicalEvent = canonicalizeJson({
       eventId: event.eventId,
       documentId: event.documentId,
       documentHashSha256: event.documentHashSha256,
@@ -234,10 +283,10 @@ export class AirGappedLedger {
       sessionId: event.sessionId,
       watermarkId: event.watermarkId,
       watermarkCommitment: event.watermarkCommitment,
+      ...(event.watermarkSignatureBase64 ? { watermarkSignatureBase64: event.watermarkSignatureBase64 } : {}),
       timestampEpochMs: event.timestampEpochMs,
     });
-
-    const msgBytes = new TextEncoder().encode(canonicalMessage);
+    const msgBytes = new TextEncoder().encode(canonicalEvent);
     const sigBytes = base64ToBytes(event.recipientSignatureBase64);
     const pubKeyBytes = hexToBytes(recipient.keys.dsaPublicKeyHex);
 
@@ -260,6 +309,7 @@ export class AirGappedLedger {
    * Mine / Propose and Finalize a new Block via multi-validator consensus.
    */
   public async commitBlock(): Promise<LedgerBlock | null> {
+    await this.ensureValidatorKeys();
     if (this.mempool.length === 0) {
       return null;
     }
@@ -276,18 +326,17 @@ export class AirGappedLedger {
     const blockData = `BLOCK:${height}:${previousBlock.blockHash}:${timestamp}:${merkleRoot}`;
     const blockHash = await sha256Hex(blockData);
 
-    // Generate multi-node validator signatures (2/3 quorum required)
+    // Require a genuine 3-of-4 quorum. Every online validator signs independently
+    // with its own Ed25519 private key; verifiers only need the public key.
+    const onlineValidators = this.validators.filter((v) => v.status === 'ONLINE' || v.status === 'VALIDATING' || v.status === 'SYNCED');
+    if (onlineValidators.length < 3) throw new Error('Consensus rejected: fewer than 3 of 4 validators are online.');
     const validatorSignatures = [];
-    for (const val of this.validators) {
-      const valSigData = `${blockHash}:${val.id}`;
-      const sigHex = await sha256Hex(valSigData); // Deterministic validator attestation
-      validatorSignatures.push({
-        validatorId: val.id,
-        validatorName: val.name,
-        signatureHex: sigHex,
-      });
+    for (const val of onlineValidators) {
+      const signatureHex = await this.signValidatorAttestation(val, blockHash);
+      validatorSignatures.push({ validatorId: val.id, validatorName: val.name, signatureHex, signatureAlgorithm: 'Ed25519' as const });
       val.blocksValidated++;
     }
+    if (validatorSignatures.length < 3) throw new Error('Consensus rejected: quorum attestations unavailable.');
 
     // Update transactions to COMMITTED
     for (const tx of transactions) {
@@ -353,6 +402,7 @@ export class AirGappedLedger {
       fieldFound: string;
     };
   }> {
+    await this.ensureValidatorKeys();
     let txCount = 0;
 
     for (let i = 0; i < this.chain.length; i++) {
@@ -425,6 +475,18 @@ export class AirGappedLedger {
         };
       }
 
+      // 5. Verify every validator attestation with its public key.
+      if (block.height > 0) {
+        const onlineQuorum = block.validatorSignatures.filter((sig) => sig.signatureAlgorithm === 'Ed25519').length;
+        if (onlineQuorum < 3) return { isValid: false, totalBlocksChecked: i, totalTransactionsChecked: txCount, tamperDetected: { blockHeight: block.height, reason: 'Validator quorum signature count below 3-of-4 requirement', fieldExpected: '>=3', fieldFound: String(onlineQuorum) } };
+        for (const sig of block.validatorSignatures) {
+          const validator = this.validators.find((v) => v.id === sig.validatorId);
+          if (!validator || !(await this.verifyValidatorAttestation(validator, block.blockHash, sig.signatureHex))) {
+            return { isValid: false, totalBlocksChecked: i, totalTransactionsChecked: txCount, tamperDetected: { blockHeight: block.height, reason: `Invalid Ed25519 validator attestation from ${sig.validatorId}`, fieldExpected: 'VALID_ED25519_SIGNATURE', fieldFound: 'FAILED_VERIFICATION' } };
+          }
+        }
+      }
+
       // 5. Verify recipient ML-DSA-65 signatures in the block
       for (const tx of block.transactions) {
         txCount++;
@@ -440,6 +502,7 @@ export class AirGappedLedger {
             sessionId: tx.sessionId,
             watermarkId: tx.watermarkId,
             watermarkCommitment: tx.watermarkCommitment,
+            ...(tx.watermarkSignatureBase64 ? { watermarkSignatureBase64: tx.watermarkSignatureBase64 } : {}),
             timestampEpochMs: tx.timestampEpochMs,
           });
 

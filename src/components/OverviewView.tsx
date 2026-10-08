@@ -81,7 +81,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </span>
           </div>
           <span className="text-[11px] text-slate-400 block truncate">
-            Hardware isolated
+            Browser-local enclave
           </span>
         </div>
 
@@ -96,7 +96,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <VerificationBadge label="Healthy" />
           </div>
           <span className="text-[11px] text-slate-400 block truncate">
-            4/4 Validator nodes active
+            4-node quorum configured
           </span>
         </div>
 
@@ -230,7 +230,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         <KeyValueRow label="Symmetric Bulk Cipher" value="AES-256-GCM with 96-bit random IV & 128-bit authentication tag" mono={false} />
         <KeyValueRow label="Key Derivation" value="HKDF-SHA256 (RFC 5869) with air-gapped domain salt" mono={false} />
         <KeyValueRow label="Steganographic Capacity" value="Zero-width whitespace encoding with CRC-16 checksum & 0xA55A sync marker" mono={false} />
-        <KeyValueRow label="Ledger Consensus" value="4-Node Quorum with Merkle tree state roots and SHA-256 block hash chaining" mono={false} />
+        <KeyValueRow label="Ledger Consensus" value="4-node 3-of-4 Ed25519 attestation quorum with Merkle roots and SHA-256 chain" mono={false} />
       </TechnicalDetails>
     </PageShell>
   );

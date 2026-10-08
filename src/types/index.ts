@@ -62,6 +62,8 @@ export interface EncryptedPackage {
   isPdf?: boolean;
   mimeType?: string;
   filename?: string;
+  encryptionAadVersion?: 2;
+  recipientManifestHashSha256?: string;
 }
 
 export interface DecryptionEventPayload {
@@ -76,6 +78,7 @@ export interface DecryptionEventPayload {
   sessionId: string;
   watermarkId: string;
   watermarkCommitment: string;
+  watermarkSignatureBase64?: string;
   timestampEpochMs: number;
   clientMetadata: {
     terminalId: string;
@@ -86,6 +89,8 @@ export interface DecryptionEventPayload {
 export interface DecryptionEvent extends DecryptionEventPayload {
   signatureAlgorithm: 'ML-DSA-65';
   recipientSignatureBase64: string;
+  /** Versioned authenticated watermark metadata carried by the forensic channel. */
+  watermarkSignatureAlgorithm?: 'ML-DSA-65';
   blockHeight?: number;
   txHash?: string;
   status: 'MEMPOOL' | 'COMMITTED';
@@ -99,6 +104,10 @@ export interface WatermarkPayload {
   recipientFingerprint: string;
   timestamp: number;
   eccChecksum: number;
+  /** Base64 ML-DSA-65 signature over the watermark context and original document hash. */
+  watermarkSignatureBase64?: string;
+  /** SHA-256 of the original unwatermarked document, bound by watermark signature. */
+  documentHashSha256?: string;
 }
 
 export interface ValidatorNode {
@@ -109,6 +118,7 @@ export interface ValidatorNode {
   status: 'ONLINE' | 'VALIDATING' | 'SYNCED';
   blocksValidated: number;
   publicVerificationKeyHex: string;
+  signatureAlgorithm?: 'Ed25519' | 'GENESIS-TRUSTED';
 }
 
 export interface LedgerBlock {
@@ -122,6 +132,7 @@ export interface LedgerBlock {
     validatorId: string;
     validatorName: string;
     signatureHex: string;
+    signatureAlgorithm?: 'Ed25519';
   }>;
   stateRoot: string;
 }

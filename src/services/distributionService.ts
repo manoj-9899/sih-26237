@@ -27,6 +27,7 @@ import {
   bytesToBase64,
   base64ToBytes,
   canonicalizeJson,
+  buildDocumentAad,
 } from '../crypto/pqc';
 import {
   embedWatermarkInText,
@@ -58,8 +59,26 @@ export class DistributionService {
     // 2. Canonical document hash: calculated directly from the original bytes
     const originalDocumentHashSha256 = await sha256Hex(rawBytes);
 
-    // 3. Symmetric AES-256-GCM encryption with fresh random CEK over complete binary bytes
-    const encResult = await encryptDocumentContent(rawBytes);
+    // Create the package identity and recipient manifest before encryption so AES-GCM AAD
+    // cryptographically binds the ciphertext to this exact distribution context.
+    const packageId = `PKG-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const recipientManifestHashSha256 = await sha256Hex(canonicalizeJson(recipients.map((r) => ({
+      id: r.id,
+      kemPublicKeyHex: r.keys.kemPublicKeyHex,
+      dsaPublicKeyHex: r.keys.dsaPublicKeyHex,
+      fingerprint: r.keys.keyFingerprint,
+    })).sort((a, b) => a.id.localeCompare(b.id))));
+    const aad = buildDocumentAad({
+      version: 2,
+      documentId: doc.id,
+      documentHashSha256: originalDocumentHashSha256,
+      packageId,
+      recipientManifestHash: recipientManifestHashSha256,
+      mimeType: doc.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
+    });
+
+    // 3. Symmetric AES-256-GCM encryption with metadata-bound authenticated data.
+    const encResult = await encryptDocumentContent(rawBytes, aad);
 
     // 4. Encapsulate CEK for each recipient using their NIST FIPS 203 (ML-KEM-768) public key
     const envelopes = [];
@@ -79,8 +98,6 @@ export class DistributionService {
       });
     }
 
-    const packageId = `PKG-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
-
     const pkg: EncryptedPackage = {
       packageId,
       documentId: doc.id,
@@ -98,6 +115,8 @@ export class DistributionService {
       isPdf,
       mimeType: doc.mimeType || (isPdf ? 'application/pdf' : 'text/plain'),
       filename: doc.filename || `${doc.title.replace(/\s+/g, '_')}.${isPdf ? 'pdf' : 'txt'}`,
+      encryptionAadVersion: 2,
+      recipientManifestHashSha256,
     };
 
     await airGappedStorage.savePackage(pkg);
@@ -181,12 +200,32 @@ export class DistributionService {
     const tagBytes = hexToBytes(pkg.tagHex);
     const ivBytes = hexToBytes(pkg.ivHex);
 
-    const decryptedBytes = await decryptDocumentContent(
-      ciphertextBytes,
-      tagBytes,
-      ivBytes,
-      recoveredCek
-    );
+    const recipientManifestHashSha256 = pkg.recipientManifestHashSha256;
+    if (pkg.encryptionAadVersion !== 2 || !recipientManifestHashSha256) {
+      throw new Error('PackageSecurityError: Legacy package lacks authenticated distribution metadata.');
+    }
+    const aad = buildDocumentAad({
+      version: 2,
+      documentId: pkg.documentId,
+      documentHashSha256: pkg.originalDocumentHashSha256,
+      packageId: pkg.packageId,
+      recipientManifestHash: recipientManifestHashSha256,
+      mimeType: pkg.mimeType || (pkg.isPdf ? 'application/pdf' : 'text/plain'),
+    });
+    let decryptedBytes: Uint8Array;
+    try {
+      decryptedBytes = await decryptDocumentContent(
+        ciphertextBytes,
+        tagBytes,
+        ivBytes,
+        recoveredCek,
+        aad
+      );
+    } finally {
+      // Best-effort browser heap hygiene. JavaScript cannot guarantee physical
+      // memory erasure, but the transient CEK must not remain referenced.
+      recoveredCek.fill(0);
+    }
     const isPdf = pkg.isPdf || (decryptedBytes.length >= 5 && decryptedBytes[0] === 0x25 && decryptedBytes[1] === 0x50 && decryptedBytes[2] === 0x44 && decryptedBytes[3] === 0x46);
     let rawPlaintext = '';
     if (!isPdf) {
@@ -199,6 +238,7 @@ export class DistributionService {
     const sessionId = crypto.randomUUID();
     const watermarkId = `WM-${sessionId.slice(0, 8).toUpperCase()}`;
     const timestamp = Date.now();
+    const documentHashSha256 = await sha256Hex(decryptedBytes);
 
     const watermarkPayload: WatermarkPayload = {
       syncHeader: 0xa55a,
@@ -208,29 +248,40 @@ export class DistributionService {
       recipientFingerprint: recipient.keys.keyFingerprint,
       timestamp,
       eccChecksum: 0,
+      documentHashSha256,
     };
 
-    // Embed invisible watermark in text (for text documents or diagnostic text representation)
-    const watermarkedText = embedWatermarkInText(rawPlaintext, watermarkPayload);
-
-    // Embed invisible watermark into authentic PDF binary bytes if document is a PDF
-    let finalDecryptedBytes = decryptedBytes;
-    if (isPdf) {
-      try {
-        finalDecryptedBytes = await embedWatermarkInPdf(decryptedBytes, watermarkPayload);
-      } catch (embedErr) {
-        console.warn('PDF Watermark embedding fallback to original bytes:', embedErr);
-      }
-    }
-
     // 5. Construct Decryption Event Payload
-    const documentHashSha256 = await sha256Hex(decryptedBytes);
     const packageHashSha256 = await sha256Hex(pkg.ciphertextBase64);
     const watermarkCommitment = await computeWatermarkCommitment(
       sessionId,
       recipient.id,
       documentHashSha256
     );
+    const watermarkAuthMessage = canonicalizeJson({
+      version: 2,
+      sessionId,
+      watermarkId,
+      recipientId: recipient.id,
+      recipientFingerprint: recipient.keys.keyFingerprint,
+      timestampEpochMs: timestamp,
+      documentHashSha256,
+      watermarkCommitment,
+    });
+    const watermarkSignatureBytes = signWithMlDsa65(new TextEncoder().encode(watermarkAuthMessage), dsaSecretBytes);
+    watermarkPayload.watermarkSignatureBase64 = bytesToBase64(watermarkSignatureBytes);
+
+    // Embed only after the authenticator has been created so every forensic carrier
+    // contains the signed watermark context.
+    const watermarkedText = embedWatermarkInText(rawPlaintext, watermarkPayload);
+    let finalDecryptedBytes = decryptedBytes;
+    if (isPdf) {
+      try {
+        finalDecryptedBytes = await embedWatermarkInPdf(decryptedBytes, watermarkPayload);
+      } catch (embedErr) {
+        throw new Error(`WatermarkSecurityError: authenticated PDF watermark embedding failed: ${embedErr instanceof Error ? embedErr.message : String(embedErr)}`);
+      }
+    }
 
     const eventId = `EVT-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 8999 + 1000)}`;
 
@@ -246,6 +297,7 @@ export class DistributionService {
       sessionId,
       watermarkId,
       watermarkCommitment,
+      watermarkSignatureBase64: watermarkPayload.watermarkSignatureBase64!,
       timestampEpochMs: timestamp,
       clientMetadata: {
         terminalId: `SECURE-WS-${recipient.avatarInitials}-409`,
@@ -264,6 +316,7 @@ export class DistributionService {
       sessionId: eventPayload.sessionId,
       watermarkId: eventPayload.watermarkId,
       watermarkCommitment: eventPayload.watermarkCommitment,
+      watermarkSignatureBase64: eventPayload.watermarkSignatureBase64,
       timestampEpochMs: eventPayload.timestampEpochMs,
     });
 
@@ -424,6 +477,59 @@ export class DistributionService {
     }
 
     const { event, block } = match;
+
+    // Step 2.5: Verify the extracted watermark's asymmetric authenticator.
+    // A CRC can detect accidental corruption but cannot authenticate a watermark.
+    const watermarkRecipient = airGappedLedger.getRecipient(event.recipientId);
+    const watermarkAuthMessage = canonicalizeJson({
+      version: 2,
+      sessionId: extractedPayload.sessionId,
+      watermarkId: extractedPayload.watermarkId,
+      recipientId: event.recipientId,
+      recipientFingerprint: extractedPayload.recipientFingerprint,
+      timestampEpochMs: extractedPayload.timestamp,
+      documentHashSha256: extractedPayload.documentHashSha256 || event.documentHashSha256,
+      watermarkCommitment: event.watermarkCommitment,
+    });
+    const extractedSignature = extractedPayload.watermarkSignatureBase64;
+    const extractedMetadataMatchesLedger =
+      extractedPayload.recipientFingerprint.toLowerCase() === event.recipientPubkeyFingerprint.toLowerCase() &&
+      extractedPayload.timestamp === event.timestampEpochMs &&
+      (!extractedPayload.documentHashSha256 || extractedPayload.documentHashSha256 === event.documentHashSha256);
+    const signatureMatchesLedger = !!extractedSignature && extractedSignature === event.watermarkSignatureBase64;
+    const watermarkSignatureValid = extractedMetadataMatchesLedger && !!watermarkRecipient && signatureMatchesLedger && verifyMlDsa65(
+      base64ToBytes(extractedSignature!),
+      new TextEncoder().encode(watermarkAuthMessage),
+      hexToBytes(watermarkRecipient.keys.dsaPublicKeyHex)
+    );
+    if (!watermarkSignatureValid) {
+      evidenceChain.push({
+        step: 'Watermark Cryptographic Authentication',
+        description: 'Verifying extracted watermark against recipient ML-DSA-65 authenticator',
+        status: 'FAILED',
+        technicalDetail: 'The extracted watermark has no valid cryptographic authenticator matching the committed provenance event. CRC alone is insufficient for attribution.',
+      });
+      return {
+        reportId,
+        analyzedAt: Date.now(),
+        watermarkExtracted: true,
+        watermarkPayload: extractedPayload,
+        matchedEvent: event,
+        matchedBlock: block,
+        merkleProofValid: false,
+        pqcSignatureValid: false,
+        ledgerIntegrityValid: false,
+        attributionVerdict: 'EVIDENCE_MISMATCH',
+        confidenceScore: 0,
+        evidenceChain,
+      };
+    }
+    evidenceChain.push({
+      step: 'Watermark Cryptographic Authentication',
+      description: 'Verified ML-DSA-65 authenticator over watermark context and document hash',
+      status: 'VERIFIED',
+      technicalDetail: 'Authenticated watermark matches the signed ledger event and recipient public key.',
+    });
 
     // Step 3: Watermark Commitment & Document Integrity Validation
     const expectedCommitment = await computeWatermarkCommitment(
@@ -617,7 +723,7 @@ export class DistributionService {
       ledgerIntegrityValid: true,
       attributedRecipient: recipient,
       attributionVerdict: 'CONFIRMED_LEAK_SOURCE',
-      confidenceScore: 99.98,
+      confidenceScore: 100,
       evidenceChain,
     };
   }

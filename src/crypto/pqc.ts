@@ -142,7 +142,7 @@ export interface SymmetricEncryptionResult {
 
 export async function encryptDocumentContent(
   plaintextBytes: Uint8Array,
-  aadString = 'AUTHENTICATED-DOCUMENT-HEADER'
+  aadString: string
 ): Promise<SymmetricEncryptionResult> {
   // Generate a random 256-bit Content Encryption Key (CEK)
   const cekRaw = crypto.getRandomValues(new Uint8Array(32));
@@ -186,7 +186,7 @@ export async function decryptDocumentContent(
   tag: Uint8Array,
   iv: Uint8Array,
   cekRaw: Uint8Array,
-  aadString = 'AUTHENTICATED-DOCUMENT-HEADER'
+  aadString: string
 ): Promise<Uint8Array> {
   const combined = new Uint8Array(ciphertext.length + tag.length);
   combined.set(ciphertext, 0);
@@ -391,6 +391,36 @@ export async function decryptKeyWithPassphrase(
   );
 
   return new Uint8Array(decryptedBuf);
+}
+
+/** Build deterministic authenticated metadata for document/package encryption. */
+export function buildDocumentAad(metadata: {
+  version: number;
+  documentId: string;
+  documentHashSha256: string;
+  packageId: string;
+  recipientManifestHash: string;
+  mimeType: string;
+}): string {
+  return `SIH-AAD-V2:${canonicalizeJson(metadata)}`;
+}
+
+/** Real asymmetric validator signatures using Web Crypto Ed25519. */
+export async function generateEd25519KeyPair(): Promise<CryptoKeyPair> {
+  return crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']) as Promise<CryptoKeyPair>;
+}
+
+export async function signEd25519(message: Uint8Array, privateKey: CryptoKey): Promise<Uint8Array> {
+  const sig = await crypto.subtle.sign({ name: 'Ed25519' }, privateKey, message as ArrayBufferView<ArrayBuffer>);
+  return new Uint8Array(sig);
+}
+
+export async function verifyEd25519(signature: Uint8Array, message: Uint8Array, publicKey: CryptoKey): Promise<boolean> {
+  try {
+    return await crypto.subtle.verify({ name: 'Ed25519' }, publicKey, signature as ArrayBufferView<ArrayBuffer>, message as ArrayBufferView<ArrayBuffer>);
+  } catch {
+    return false;
+  }
 }
 
 // RFC 8785 Canonical JSON Serialization (JCS)

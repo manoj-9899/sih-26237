@@ -166,7 +166,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ onRefreshNeeded }) => {
             CRITICAL INTEGRITY BREACH: TAMPERING DETECTED AT BLOCK #{auditResult.tamperDetected.blockHeight}
           </div>
           <p className="text-[11px] text-rose-800 leading-normal">
-            {auditResult.tamperDetected.reason}. The cryptographic hash chain and Merkle tree root were broken, causing the 4/4 validator quorum to flag the block as unauthorized.
+            {auditResult.tamperDetected.reason}. The cryptographic hash chain and Merkle tree root were broken, causing the configured 3-of-4 validator quorum to flag the block as unauthorized.
           </p>
         </div>
       )}
@@ -262,7 +262,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ onRefreshNeeded }) => {
                   <KeyValueRow label="Previous Block Hash" value={selectedBlock.previousHash} copyable />
                   <KeyValueRow label="Merkle Root" value={selectedBlock.merkleRoot} copyable />
                   <div className="pt-2 text-[11px] text-slate-500">
-                    All blocks are ratified through Byzantine fault-tolerant consensus across 4 independent validator enclaves.
+                    Blocks are finalized only after a 3-of-4 quorum of independently verifiable Ed25519 validator attestations. Browser mode is a local quorum demonstration; distributed security requires the separate validator node network.
                   </div>
                 </TechnicalDetails>
               </div>

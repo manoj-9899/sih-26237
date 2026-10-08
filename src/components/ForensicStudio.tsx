@@ -242,10 +242,10 @@ export const ForensicStudio: React.FC<ForensicStudioProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 text-rose-600" />
-                        INDISPUTABLE LEAK ATTRIBUTION CONFIRMED
+                        FORENSIC ATTRIBUTION CONFIRMED
                       </span>
                       <span className="text-xs font-mono px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 font-bold">
-                        CONFIDENCE: {report.confidenceScore}% (MATHEMATICAL CERTAINTY)
+                        VERIFICATION: {report.confidenceScore}% OF REQUIRED CRYPTOGRAPHIC GATES
                       </span>
                     </div>
 

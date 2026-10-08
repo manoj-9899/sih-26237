@@ -625,10 +625,10 @@ export const WalkthroughTab: React.FC<WalkthroughTabProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
                       <Fingerprint className="w-4 h-4 text-rose-600" />
-                      FORMAL FORENSIC FINDING &bull; INDISPUTABLE ATTRIBUTION
+                      FORMAL FORENSIC FINDING &bull; CRYPTOGRAPHIC ATTRIBUTION
                     </span>
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-rose-100/80 text-rose-800 border border-rose-300 font-semibold">
-                      CONFIDENCE: {investigationReport.confidenceScore}% (MATHEMATICALLY PROVEN)
+                      VERIFICATION: {investigationReport.confidenceScore}% OF REQUIRED CRYPTOGRAPHIC GATES
                     </span>
                   </div>
 

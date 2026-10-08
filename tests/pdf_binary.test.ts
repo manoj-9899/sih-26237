@@ -63,7 +63,7 @@ describe('TEST GROUP 8: Real PDF Binary Ingestion, Binary Hashing & Crypto Integ
 
   it('PDF-CRYPTO-01: Binary PDF survives AES-256-GCM encryption/decryption unchanged', async () => {
     // Encrypt real PDF binary buffer
-    const encResult = await encryptDocumentContent(samplePdfBytes);
+    const encResult = await encryptDocumentContent(samplePdfBytes, 'TEST-PDF-AAD-V2');
     assert.ok(encResult.ciphertext instanceof Uint8Array, 'Ciphertext must be Uint8Array');
     assert.strictEqual(encResult.iv.length, 12, 'AES-GCM IV must be 12 bytes');
     assert.strictEqual(encResult.tag.length, 16, 'AES-GCM Auth tag must be 16 bytes');
@@ -73,7 +73,8 @@ describe('TEST GROUP 8: Real PDF Binary Ingestion, Binary Hashing & Crypto Integ
       encResult.ciphertext,
       encResult.tag,
       encResult.iv,
-      encResult.cekRaw
+      encResult.cekRaw,
+      'TEST-PDF-AAD-V2'
     );
 
     assert.ok(decryptedBytes instanceof Uint8Array, 'Decrypted output must be Uint8Array');
@@ -81,12 +82,13 @@ describe('TEST GROUP 8: Real PDF Binary Ingestion, Binary Hashing & Crypto Integ
   });
 
   it('PDF-CRYPTO-02: Original PDF bytes === decrypted PDF bytes (byte-for-byte exact equality)', async () => {
-    const encResult = await encryptDocumentContent(samplePdfBytes);
+    const encResult = await encryptDocumentContent(samplePdfBytes, 'TEST-PDF-AAD-V2');
     const decryptedBytes = await decryptDocumentContent(
       encResult.ciphertext,
       encResult.tag,
       encResult.iv,
-      encResult.cekRaw
+      encResult.cekRaw,
+      'TEST-PDF-AAD-V2'
     );
 
     assert.deepStrictEqual(
