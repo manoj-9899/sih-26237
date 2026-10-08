@@ -145,7 +145,7 @@ export function embedWatermarkInText(text: string, payload: WatermarkPayload): s
   // extractor can recover and verify it without the original document.
   let authSequence = '';
   if (payload.watermarkSignatureBase64) {
-    const authBytes = new TextEncoder().encode(payload.watermarkSignatureBase64);
+    const authBytes = new TextEncoder().encode(`${payload.documentHashSha256 || ''}|${payload.watermarkSignatureBase64}`);
     authSequence = ZW_AUTH_START + Array.from(authBytes).map((b) => b.toString(16).padStart(2, '0')).join('') + ZW_AUTH_END;
   }
 
@@ -185,7 +185,14 @@ export function extractWatermarkFromText(text: string): WatermarkPayload | null 
       if (/^[0-9a-fA-F]+$/.test(hex) && hex.length % 2 === 0) {
         const authBytes = new Uint8Array(hex.length / 2);
         for (let i = 0; i < authBytes.length; i++) authBytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-        payload.watermarkSignatureBase64 = new TextDecoder().decode(authBytes);
+        const authText = new TextDecoder().decode(authBytes);
+        const separator = authText.indexOf('|');
+        if (separator >= 0) {
+          payload.documentHashSha256 = authText.slice(0, separator) || undefined;
+          payload.watermarkSignatureBase64 = authText.slice(separator + 1) || undefined;
+        } else {
+          payload.watermarkSignatureBase64 = authText;
+        }
       }
     }
   }
