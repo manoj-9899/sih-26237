@@ -62,6 +62,8 @@ export interface EncryptedPackage {
   isPdf?: boolean;
   mimeType?: string;
   filename?: string;
+  encryptionAadVersion?: 2;
+  recipientManifestHashSha256?: string;
 }
 
 export interface DecryptionEventPayload {
