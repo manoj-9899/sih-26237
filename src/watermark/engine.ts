@@ -90,6 +90,7 @@ export function deserializeWatermarkPayload(
 
   if (storedCrc !== calculatedCrc) {
     console.warn('Watermark CRC16 mismatch: possible tampering or transmission corruption');
+    return null;
   }
 
   // Extract Session ID hex
