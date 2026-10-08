@@ -82,12 +82,13 @@ describe('TEST GROUP 8: Real PDF Binary Ingestion, Binary Hashing & Crypto Integ
   });
 
   it('PDF-CRYPTO-02: Original PDF bytes === decrypted PDF bytes (byte-for-byte exact equality)', async () => {
-    const encResult = await encryptDocumentContent(samplePdfBytes);
+    const encResult = await encryptDocumentContent(samplePdfBytes, 'TEST-PDF-AAD-V2');
     const decryptedBytes = await decryptDocumentContent(
       encResult.ciphertext,
       encResult.tag,
       encResult.iv,
-      encResult.cekRaw
+      encResult.cekRaw,
+      'TEST-PDF-AAD-V2'
     );
 
     assert.deepStrictEqual(
