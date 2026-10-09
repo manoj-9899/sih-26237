@@ -2,6 +2,8 @@
 
 This file preserves the longer technical documentation that previously lived in the repository's top-level README. For the beginner-facing overview and setup flow, start at [README.md](README.md). For a click-by-click product walkthrough, see [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
+> **Historical reference warning (October 2026):** This is a preserved snapshot of the former README, not the authoritative description of the current prototype. Some feature-status, air-gap, robustness, or attribution statements may be stronger than the implementation or available testing supports. Use the current [README.md](README.md) for the present project status and security limitations; verify claims against source code and tests before relying on them.
+
 ---
 
 # SIH26237: Post-Quantum Document Enclave & Forensic Attribution System
